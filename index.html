@@ -1,0 +1,1622 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>מערכת בחינות — טאבלט</title>
+<link rel="manifest" href="manifest.json">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="בחינות">
+<meta name="theme-color" content="#0d1117">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+:root{
+  --bg:#0d1117;--card:rgba(255,255,255,.045);--card2:rgba(255,255,255,.025);
+  --border:rgba(255,255,255,.08);--accent:#8b5cf6;--green:#10b981;--red:#ef4444;
+  --orange:#f59e0b;--teal:#06b6d4;--text:#e2e8f0;--muted:#94a3b8;
+  --input:rgba(255,255,255,.07);--radius:14px;--safe:env(safe-area-inset-bottom,0px);
+}
+html,body{height:100%;overflow:hidden;font-family:'Segoe UI',Tahoma,Arial,sans-serif;
+  direction:rtl;background:var(--bg);color:var(--text);font-size:16px;}
+
+/* ── SCREENS ── */
+.screen{display:none;height:100vh;height:100dvh;flex-direction:column;overflow:hidden;}
+.screen.active{display:flex;}
+
+/* ══ LOGIN ══ */
+#loginScreen{align-items:center;justify-content:flex-start;overflow-y:auto;
+  background:radial-gradient(ellipse at 10% 20%,rgba(88,28,235,.13) 0%,transparent 50%),
+             radial-gradient(ellipse at 90% 80%,rgba(6,182,212,.08) 0%,transparent 50%),
+             var(--bg);padding:20px 16px 40px;}
+.login-box{background:var(--card);border:1px solid rgba(139,92,246,.3);border-radius:20px;
+  padding:28px 22px;width:100%;max-width:500px;margin:auto;
+  box-shadow:0 12px 48px rgba(0,0,0,.7);}
+.login-logo{text-align:center;font-size:2.4rem;margin-bottom:6px;}
+.login-title{text-align:center;font-size:1.15rem;font-weight:800;color:#fff;
+  text-shadow:0 0 20px rgba(196,181,253,.5);margin-bottom:2px;}
+.login-sub{text-align:center;color:var(--muted);font-size:.78rem;margin-bottom:18px;}
+
+.et-group{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px;}
+.et-btn{border:2px solid var(--border);border-radius:14px;padding:16px 10px;
+  background:var(--card2);color:var(--muted);cursor:pointer;text-align:center;
+  font-family:inherit;transition:all .2s;}
+.et-btn .ico{font-size:2rem;display:block;margin-bottom:6px;}
+.et-btn .lbl{font-size:.95rem;font-weight:700;display:block;}
+.et-btn .sub{font-size:.72rem;margin-top:3px;display:block;}
+.et-btn.sel{background:rgba(139,92,246,.12);border-color:var(--accent);color:var(--accent);}
+
+.sec-lbl{font-size:.78rem;font-weight:700;color:#c4b5fd;margin-bottom:10px;
+  padding-bottom:6px;border-bottom:1px solid var(--border);}
+.form-row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
+.form-row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px;}
+.form-g{margin-bottom:10px;}
+.form-g label{display:block;font-size:.78rem;color:var(--muted);margin-bottom:5px;font-weight:600;}
+input[type=text],input[type=date],input[type=number],select,textarea{
+  width:100%;background:var(--input);border:1px solid var(--border);border-radius:8px;
+  color:var(--text);padding:10px 12px;font-size:.9rem;font-family:inherit;direction:rtl;
+  transition:border-color .2s;}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);
+  box-shadow:0 0 0 3px rgba(139,92,246,.15);}
+textarea{resize:vertical;min-height:70px;}
+select option{background:#1e293b;}
+.req{color:var(--red);}
+
+.sig-wrap{margin-top:6px;}
+.sig-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;}
+.sig-top span{font-size:.76rem;color:var(--muted);}
+.sig-clr{font-size:.72rem;color:var(--muted);background:none;border:none;cursor:pointer;padding:2px 8px;}
+.sig-clr:hover{color:var(--red);}
+.sig-canvas{width:100%;height:100px;background:var(--input);border:2px dashed var(--border);
+  border-radius:8px;cursor:crosshair;touch-action:none;display:block;}
+.sig-canvas.signed{border-color:var(--green);border-style:solid;}
+
+.btn-login{width:100%;background:linear-gradient(135deg,var(--accent),#4c1d95);
+  color:#fff;border:none;border-radius:12px;padding:15px;font-size:1.05rem;
+  font-weight:700;cursor:pointer;margin-top:18px;}
+.btn-login:disabled{opacity:.35;cursor:not-allowed;}
+
+/* ══ APP HEADER ══ */
+.app-hdr{background:rgba(15,23,42,.98);border-bottom:2px solid rgba(139,92,246,.4);
+  padding:8px 14px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.hdr-title{font-size:.88rem;font-weight:800;color:#fff;}
+.hdr-sub{font-size:.66rem;color:var(--muted);margin-top:1px;}
+.hdr-right{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.type-badge{background:rgba(139,92,246,.2);border:1px solid var(--accent);color:#c4b5fd;
+  border-radius:20px;padding:3px 10px;font-size:.7rem;font-weight:700;}
+.insp-chip{background:var(--card);border:1px solid var(--border);border-radius:20px;
+  padding:3px 9px;font-size:.7rem;color:var(--text);}
+
+/* ══ STEPS NAV ══ */
+.steps-nav{display:flex;background:var(--card2);border-bottom:1px solid var(--border);
+  overflow-x:auto;scrollbar-width:none;flex-shrink:0;}
+.steps-nav::-webkit-scrollbar{display:none;}
+.step-btn{flex:none;padding:7px 6px;background:none;border:none;
+  border-bottom:3px solid transparent;color:var(--muted);font-size:.62rem;
+  cursor:pointer;text-align:center;transition:all .2s;white-space:nowrap;
+  font-family:inherit;min-width:56px;}
+.step-btn .si{font-size:.9rem;display:block;margin-bottom:1px;}
+.step-btn.active{color:var(--accent);border-bottom-color:var(--accent);}
+.step-btn.done{color:var(--green);}
+.autosave{font-size:.64rem;color:var(--muted);text-align:center;padding:3px;
+  flex-shrink:0;background:var(--card2);}
+
+/* ══ MAIN ══ */
+.main-wrap{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+.main-content{max-width:800px;margin:0 auto;padding:14px 12px 110px;}
+.step-panel{display:none;}
+.step-panel.active{display:block;}
+
+/* ══ CARD ══ */
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+  padding:16px;margin-bottom:12px;}
+.card-title{font-size:.88rem;font-weight:700;color:#c4b5fd;margin-bottom:14px;
+  padding-bottom:8px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.sec-strip{background:linear-gradient(90deg,rgba(99,102,241,.22),transparent);
+  border-right:3px solid var(--accent);color:#c4b5fd;padding:8px 12px;
+  border-radius:0 8px 8px 0;font-weight:700;font-size:.85rem;margin-bottom:14px;}
+.hint{font-size:.72rem;color:var(--muted);margin-top:4px;}
+
+/* ══ FOOTER ══ */
+.step-footer{position:fixed;bottom:0;right:0;left:0;
+  background:var(--card2);border-top:1px solid var(--border);
+  padding:9px 14px calc(9px + var(--safe));display:flex;gap:9px;z-index:50;}
+.btn-next{flex:1;background:linear-gradient(135deg,var(--accent),#4c1d95);
+  color:#fff;border:none;border-radius:10px;padding:12px;font-size:.95rem;
+  font-weight:700;cursor:pointer;}
+.btn-back{background:rgba(255,255,255,.07);color:var(--muted);
+  border:1px solid var(--border);border-radius:10px;padding:12px 16px;
+  font-size:.95rem;cursor:pointer;}
+.btn-sm{background:rgba(139,92,246,.2);border:1px solid rgba(139,92,246,.4);
+  color:#c4b5fd;border-radius:8px;padding:7px 12px;font-size:.78rem;
+  font-weight:600;cursor:pointer;white-space:nowrap;}
+.btn-sm-g{background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.4);
+  color:#34d399;}
+
+/* ══ CRITERIA ══ */
+.criterion-row{background:rgba(255,255,255,.03);border:1px solid var(--border);
+  border-radius:8px;margin-bottom:8px;border-right:3px solid rgba(255,255,255,.12);}
+.criterion-row.ok{border-right-color:var(--green);}
+.criterion-row.fail{border-right-color:var(--red);}
+.criterion-row.na{border-right-color:#475569;}
+.cr-hdr{display:flex;align-items:baseline;gap:6px;padding:8px 12px 2px;}
+.cr-num{color:#a78bfa;font-weight:700;font-size:.88rem;}
+.cr-type{color:var(--text);font-weight:600;font-size:.82rem;}
+.cr-desc{padding:2px 12px 6px;color:var(--muted);font-size:.78rem;line-height:1.5;}
+.cr-ctrl{padding:5px 12px 10px;display:flex;flex-direction:column;gap:7px;}
+.tog-g{display:flex;gap:5px;}
+.tog-btn{flex:1;padding:7px 4px;border:1.5px solid var(--border);border-radius:99px;
+  background:var(--input);color:var(--muted);font-size:.78rem;font-weight:600;
+  cursor:pointer;font-family:inherit;text-align:center;transition:all .2s;}
+.tog-btn.ok2{background:rgba(16,185,129,.2);border-color:var(--green);color:#34d399;}
+.tog-btn.fail2{background:rgba(239,68,68,.2);border-color:var(--red);color:#f87171;}
+.tog-btn.na2{background:rgba(100,116,139,.2);border-color:#475569;color:var(--muted);}
+.cr-note{width:100%;background:var(--input);border:1px solid var(--border);
+  border-radius:6px;color:var(--text);padding:6px 9px;font-size:.78rem;
+  font-family:inherit;direction:rtl;resize:none;height:44px;}
+.cr-note:focus{outline:none;border-color:var(--accent);}
+
+/* ══ PHOTOS ══ */
+.photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px;}
+.photo-thumb{position:relative;aspect-ratio:4/3;border-radius:8px;overflow:hidden;
+  background:var(--card2);border:1px solid var(--border);}
+.photo-thumb img{width:100%;height:100%;object-fit:cover;}
+.del-ph{position:absolute;top:4px;left:4px;background:rgba(239,68,68,.9);
+  color:#fff;border:none;border-radius:50%;width:22px;height:22px;
+  font-size:.72rem;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+
+/* ══ ATP ══ */
+.atp-draw-bar{display:flex;gap:7px;align-items:center;flex-wrap:wrap;padding:8px 0;}
+.atp-tool{padding:5px 9px;border:1.5px solid var(--border);border-radius:7px;
+  background:none;color:var(--muted);font-size:.76rem;cursor:pointer;font-family:inherit;}
+.atp-tool.active{background:rgba(139,92,246,.15);border-color:var(--accent);color:#c4b5fd;}
+.atp-color{width:24px;height:24px;border-radius:50%;border:2px solid transparent;cursor:pointer;}
+.atp-color.sel{border-color:#fff;}
+.atp-wrap{position:relative;width:100%;background:var(--card2);border-radius:8px;overflow:hidden;}
+.atp-pdf-c{display:block;width:100%;}
+.atp-draw-c{position:absolute;top:0;left:0;width:100%;height:0;
+  cursor:crosshair;touch-action:none;opacity:0;}
+.cap-row{display:flex;gap:8px;overflow-x:auto;padding:6px 0;flex-wrap:nowrap;}
+.cap-thumb{flex-shrink:0;width:50px;height:68px;border:2px solid var(--green);
+  border-radius:6px;overflow:hidden;position:relative;}
+.cap-thumb img{width:100%;height:100%;object-fit:cover;}
+.del-cap{position:absolute;top:1px;right:1px;background:rgba(239,68,68,.9);
+  color:#fff;border:none;border-radius:50%;width:16px;height:16px;
+  font-size:.6rem;cursor:pointer;}
+.atp-page-nav{display:flex;align-items:center;gap:8px;padding:6px 0;}
+.atp-nav-btn{background:var(--card2);border:1px solid var(--border);color:var(--text);
+  border-radius:7px;padding:5px 12px;font-size:.82rem;cursor:pointer;font-family:inherit;}
+
+/* ══ RESULT / SIG in step 6 ══ */
+.sig-person-card{background:var(--card2);border:1px solid var(--border);
+  border-radius:10px;padding:12px;margin-bottom:10px;}
+.sig-person-title{font-size:.82rem;font-weight:700;color:#c4b5fd;margin-bottom:10px;}
+.result-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;}
+.res-btn{padding:12px 6px;border:2px solid var(--border);border-radius:10px;
+  background:none;color:var(--muted);font-size:.85rem;font-weight:700;
+  cursor:pointer;font-family:inherit;text-align:center;transition:all .2s;}
+.res-btn.sel-pass{background:rgba(16,185,129,.15);border-color:var(--green);color:#34d399;}
+.res-btn.sel-reject{background:rgba(239,68,68,.15);border-color:var(--red);color:#f87171;}
+.res-btn.sel-except{background:rgba(245,158,11,.15);border-color:var(--orange);color:#fbbf24;}
+
+/* ══ EXPORT ══ */
+.export-g{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px;}
+.btn-pdf{background:linear-gradient(135deg,#dc2626,#991b1b);color:#fff;border:none;
+  border-radius:10px;padding:14px;font-size:.9rem;font-weight:700;cursor:pointer;}
+.btn-json{background:linear-gradient(135deg,var(--accent),#4c1d95);color:#fff;border:none;
+  border-radius:10px;padding:14px;font-size:.9rem;font-weight:700;cursor:pointer;}
+.btn-new{width:100%;background:rgba(255,255,255,.05);color:var(--muted);
+  border:1px solid var(--border);border-radius:10px;padding:11px;
+  font-size:.85rem;cursor:pointer;margin-top:8px;}
+
+/* ══ MODAL ══ */
+.modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;
+  display:none;align-items:flex-end;}
+.modal-ov.active{display:flex;}
+.modal-sheet{background:#111827;border-radius:20px 20px 0 0;width:100%;
+  max-height:88vh;overflow-y:auto;padding:18px 16px 30px;
+  border:1px solid rgba(139,92,246,.3);}
+.modal-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+.modal-hdr h3{color:#c4b5fd;font-size:.95rem;font-weight:700;}
+.modal-x{background:none;border:none;color:var(--muted);font-size:1.4rem;cursor:pointer;}
+.calc-g{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+.calc-res{background:var(--card2);border:1px solid var(--border);border-radius:9px;padding:12px;}
+.calc-row{display:flex;justify-content:space-between;padding:5px 0;
+  border-bottom:1px solid var(--border);font-size:.84rem;}
+.calc-row:last-child{border-bottom:none;}
+.calc-val{font-weight:700;color:var(--accent);}
+.btn-calc{width:100%;background:linear-gradient(135deg,var(--accent),#4c1d95);
+  color:#fff;border:none;border-radius:10px;padding:12px;font-size:.9rem;
+  font-weight:700;cursor:pointer;}
+.btn-apply{width:100%;background:linear-gradient(135deg,var(--green),#059669);
+  color:#fff;border:none;border-radius:10px;padding:11px;font-size:.88rem;
+  font-weight:700;cursor:pointer;margin-top:9px;}
+
+/* ══ TOAST ══ */
+.toast{position:fixed;top:76px;left:50%;transform:translateX(-50%);
+  background:#1e293b;border:1px solid var(--accent);color:var(--text);
+  padding:9px 18px;border-radius:30px;font-size:.82rem;z-index:999;
+  opacity:0;transition:opacity .3s;white-space:nowrap;pointer-events:none;}
+.toast.show{opacity:1;}
+
+@media(max-width:480px){
+  .form-row2,.form-row3{grid-template-columns:1fr;}
+  .result-row{grid-template-columns:1fr;}
+  .export-g{grid-template-columns:1fr;}
+  .photo-grid{grid-template-columns:repeat(2,1fr);}
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════ LOGIN ══════════ -->
+<div id="loginScreen" class="screen active">
+<div style="width:100%;display:flex;justify-content:center;padding:20px 16px 40px;">
+<div class="login-box">
+  <div class="login-logo" style="display:flex;justify-content:center;align-items:center;gap:16px;margin-bottom:4px;">
+    <img src="logo.png" alt="" onerror="this.style.display='none'" style="height:56px;object-fit:contain;">
+    <img src="logo2.png" alt="" onerror="this.style.display='none'" style="height:56px;object-fit:contain;">
+  </div>
+  <div class="login-title">מערכת ניהול בחינות אחזקה וחימוש מרכש</div>
+  <div class="login-sub">יחידת הקישור והלוגיסטיקה — גף קישור ובחינה</div>
+
+  <div class="sec-lbl">סוג בחינה</div>
+  <div class="et-group">
+    <button class="et-btn" id="btnRakash" onclick="selType('רכש')">
+      <span class="ico">🏭</span><span class="lbl">חימוש מרכש</span><span class="sub">בחינת ציוד חדש</span>
+    </button>
+    <button class="et-btn" id="btnAchzaka" onclick="selType('אחזקה')">
+      <span class="ico">🔧</span><span class="lbl">אחזקה</span><span class="sub">לאחר אחזקה / תיקון</span>
+    </button>
+  </div>
+
+  <div class="sec-lbl">פרטי הבוחן</div>
+  <div class="form-row2">
+    <div class="form-g"><label>שם פרטי <span class="req">*</span></label><input type="text" id="l_first" placeholder="שם פרטי"></div>
+    <div class="form-g"><label>שם משפחה <span class="req">*</span></label><input type="text" id="l_last" placeholder="שם משפחה"></div>
+  </div>
+  <div class="form-row3">
+    <div class="form-g"><label>דרגה</label><input type="text" id="l_rank" placeholder="דרגה"></div>
+    <div class="form-g"><label>מספר אישי <span class="req">*</span></label><input type="text" id="l_pid" placeholder='מ"א'></div>
+    <div class="form-g"><label>מספר בוחן</label><input type="text" id="l_bid" placeholder='מ"ב'></div>
+  </div>
+  <div class="form-row2">
+    <div class="form-g"><label>שם הספק / מפעל <span class="req">*</span></label><input type="text" id="l_factory" placeholder="שם המפעל"></div>
+    <div class="form-g"><label>תאריך הבחינה <span class="req">*</span></label><input type="date" id="l_date"></div>
+  </div>
+
+  <div class="sec-lbl" style="margin-top:14px;">חתימת הבוחן</div>
+  <div class="sig-wrap">
+    <div class="sig-top"><span>חתום בתוך המסגרת</span><button class="sig-clr" onclick="clrSig('sigInsp')">נקה</button></div>
+    <canvas id="sigInsp" class="sig-canvas" width="800" height="150"></canvas>
+  </div>
+
+  <button class="btn-login" id="btnLogin" onclick="doLogin()" disabled>בחר סוג בחינה ←</button>
+</div>
+</div>
+</div>
+
+<!-- ══════════ APP ══════════ -->
+<div id="appScreen" class="screen">
+  <div class="app-hdr">
+    <div>
+      <div class="hdr-title" id="hdrTitle">✈️ מערכת בחינות</div>
+      <div class="hdr-sub" id="hdrSub">—</div>
+    </div>
+    <div class="hdr-right">
+      <span class="type-badge" id="typeBadge">—</span>
+      <span class="insp-chip" id="hdrInsp">בוחן</span>
+      <button onclick="goBackToLogin()" style="background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.4);color:#c4b5fd;border-radius:8px;padding:4px 10px;font-size:.7rem;font-weight:700;cursor:pointer;white-space:nowrap;">← פרטי בוחן</button>
+      <button onclick="confirmNew()" style="background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.4);color:#f87171;border-radius:8px;padding:4px 10px;font-size:.7rem;font-weight:700;cursor:pointer;white-space:nowrap;">🔄 חדש</button>
+    </div>
+  </div>
+
+  <div class="steps-nav">
+    <button class="step-btn active" id="nb0" onclick="goStep(0)"><span class="si">📋</span>1א דורש</button>
+    <button class="step-btn" id="nb1" onclick="goStep(1)"><span class="si">🔧</span>1ב טכני</button>
+    <button class="step-btn" id="nb2" onclick="goStep(2)"><span class="si">📦</span>3 פריט</button>
+    <button class="step-btn" id="nb3" onclick="goStep(3)"><span class="si">📊</span>4 דגימה</button>
+    <button class="step-btn" id="nb4" onclick="goStep(4)"><span class="si">✅</span>5 קריטריונים</button>
+    <button class="step-btn" id="nb5" onclick="goStep(5)"><span class="si">📝</span>6 תיאור</button>
+    <button class="step-btn" id="nb6" onclick="goStep(6)"><span class="si">📎</span>תיעוד</button>
+    <button class="step-btn" id="nb7" onclick="goStep(7)"><span class="si">✍️</span>אישורים</button>
+  </div>
+  <div class="autosave" id="autoLbl">שמירה אוטומטית</div>
+
+  <div class="main-wrap"><div class="main-content">
+
+  <!-- ── STEP 0: 1א פרטי הדורש ── -->
+  <div class="step-panel active" id="p0">
+    <div class="card">
+      <div class="sec-strip">📋 1א. פרטי הדורש</div>
+      <div class="form-row2">
+        <div class="form-g">
+          <label>קוד שדה (זמני) <span style="font-size:.72rem;color:var(--muted)">← הסימוכין הרשמי יוקצה ברשת</span></label>
+          <input type="text" id="f_referenceNumber" readonly style="color:#f59e0b;font-weight:600;" title="קוד זמני לשימוש בשטח — הסימוכין הרשמי נקבע ע״י מערכת הרשת בייבוא הZIP">
+        </div>
+        <div class="form-g"><label>מספר בחינה <span class="req">*</span></label><input type="text" id="f_examNumber"></div>
+      </div>
+      <div class="form-row2">
+        <div class="form-g"><label>שם הפרויקט</label><input type="text" id="f_projectName" placeholder="לדוגמה: RAMPAGE"></div>
+        <div class="form-g"><label>גוף דורש הבחינה</label><input type="text" id="f_requestingUnit"></div>
+      </div>
+      <div class="form-row2">
+        <div class="form-g"><label>ענף מקצועי</label><input type="text" id="f_professionalBranch"></div>
+        <div class="form-g"><label>פרטי מגיש הבקשה</label><input type="text" id="f_requesterDetails"></div>
+      </div>
+      <div class="form-row2">
+        <div class="form-g"><label>תאריך הבקשה</label><input type="date" id="f_requestDate"></div>
+        <div class="form-g"><label>דחיפות</label>
+          <select id="f_urgency"><option value="">בחר</option><option>גבוהה</option><option>רגילה</option></select>
+        </div>
+      </div>
+      <div class="form-row2">
+        <div class="form-g"><label>מספר הזמנת עבודה</label><input type="text" id="f_workOrderNumber"></div>
+        <div class="form-g"><label>סיווג הבחינה</label><input type="text" id="f_examClassification" placeholder="שמור / סודי / בלמ&quot;ס"></div>
+      </div>
+    </div>
+    <div class="step-footer"><button class="btn-next" onclick="goStep(1)">הבא ←</button></div>
+  </div>
+
+  <!-- ── STEP 1: 1ב נתונים טכניים ── -->
+  <div class="step-panel" id="p1">
+    <div class="card">
+      <div class="sec-strip">🔧 1ב. נתונים טכניים</div>
+      <div class="form-row2">
+        <div class="form-g"><label>שם הספק <span class="req">*</span></label><input type="text" id="f_factoryName"></div>
+        <div class="form-g"><label>מסח"א</label><input type="text" id="f_milCatalogNumber"></div>
+      </div>
+      <div class="form-row2">
+        <div class="form-g"><label>האם בחינה חוזרת</label>
+          <select id="f_isRepeatExam"><option value="">בחר</option><option>כן</option><option>לא</option></select>
+        </div>
+        <div class="form-g"><label>מספר אצווה</label><input type="text" id="f_batchNumber"></div>
+      </div>
+      <div class="form-row2">
+        <div class="form-g"><label>סוג הקליטה</label>
+          <select id="f_receptionType"><option value="">בחר</option><option>רכש</option><option>אחזקה</option></select>
+        </div>
+        <div class="form-g"><label>תאריך הבחינה <span class="req">*</span></label><input type="date" id="f_examDate"></div>
+      </div>
+    </div>
+    <div class="step-footer">
+      <button class="btn-back" onclick="goStep(0)">← חזור</button>
+      <button class="btn-next" onclick="goStep(2)">הבא ←</button>
+    </div>
+  </div>
+
+  <!-- ── STEP 2: 3 נתוני הפריט ── -->
+  <div class="step-panel" id="p2">
+    <div class="card">
+      <div class="sec-strip">📦 3. נתוני הפריט</div>
+      <div class="form-row2">
+        <div class="form-g"><label>מק"ט יצרן</label><input type="text" id="f_catalogNumber"></div>
+        <div class="form-g"><label>תיאור הפריט <span class="req">*</span></label><input type="text" id="f_itemDescription"></div>
+      </div>
+      <div class="form-row2">
+        <div class="form-g"><label>כמות לבחינה (גודל המנה) <span class="req">*</span></label><input type="number" id="f_quantityForExam" min="0"></div>
+        <div class="form-g"><label>שיטת הבחינה</label><input type="text" id="f_examMethod" placeholder="מיון / מדגם / ATP"></div>
+      </div>
+      <div class="form-g"><label>מס"ד — מספרי סידורי (שורה לכל מספר)</label>
+        <textarea id="f_serialNumbers" rows="4" placeholder="N-23-01-444&#10;N-20-05-062"></textarea>
+      </div>
+    </div>
+    <div class="step-footer">
+      <button class="btn-back" onclick="goStep(1)">← חזור</button>
+      <button class="btn-next" onclick="goStep(3)">הבא ←</button>
+    </div>
+  </div>
+
+  <!-- ── STEP 3: 4 תכנית דגימה ── -->
+  <div class="step-panel" id="p3">
+    <div class="card">
+      <div class="card-title">
+        📊 4. תכנית דגימה
+        <button class="btn-sm" onclick="openCalc()">🧮 מחשבון ISO 2859</button>
+      </div>
+      <div class="form-row2">
+        <div class="form-g"><label>תכנית דגימה עפ"י התקן</label>
+          <select id="f_samplingPlan"><option value="">בחר</option><option>רגילה</option><option>מחמירה</option><option>מצומצמת</option></select>
+        </div>
+        <div class="form-g"><label>גודל המדגם</label><input type="number" id="f_sampleSize" min="0"></div>
+      </div>
+      <div class="form-row2">
+        <div class="form-g"><label>מספר קבלה (ק)</label><input type="number" id="f_acceptanceNumber" min="0"></div>
+        <div class="form-g"><label>מספר דחיה (ד)</label><input type="number" id="f_rejectionNumber" min="0"></div>
+      </div>
+      <div class="form-row2">
+        <div class="form-g"><label>כמות שעברה בחינה</label><input type="number" id="f_passed" min="0"></div>
+        <div class="form-g"><label>כמות שנכשלה בחינה</label><input type="number" id="f_failed" min="0"></div>
+      </div>
+    </div>
+    <div class="step-footer">
+      <button class="btn-back" onclick="goStep(2)">← חזור</button>
+      <button class="btn-next" onclick="goStep(4)">הבא ←</button>
+    </div>
+  </div>
+
+  <!-- ── STEP 4: 5 קריטריונים ── -->
+  <div class="step-panel" id="p4">
+    <div class="card" style="padding-bottom:4px;">
+      <div class="sec-strip">✅ 5. קריטריוני הבחינה</div>
+      <div id="criteriaContainer"></div>
+    </div>
+    <div class="step-footer">
+      <button class="btn-back" onclick="goStep(3)">← חזור</button>
+      <button class="btn-next" onclick="goStep(5)">הבא ←</button>
+    </div>
+  </div>
+
+  <!-- ── STEP 5: 6 תיאור + תוצאה + הערות ── -->
+  <div class="step-panel" id="p5">
+    <div class="card">
+      <div class="sec-strip">📝 6. תיאור ותוצאות הבחינה</div>
+      <div class="form-g"><label>תיאור הבחינה</label>
+        <textarea id="f_examDescription" rows="3" placeholder="תיאור מפורט..."></textarea>
+      </div>
+      <div class="form-g"><label>סיכום הבחינה</label>
+        <textarea id="f_examSummary" rows="4" placeholder="סכם ממצאים והמלצות..."></textarea>
+      </div>
+    </div>
+    <div class="card">
+      <div class="sec-strip">📎 7. הערות</div>
+      <div class="form-g"><label>הערות</label><textarea id="f_notes" rows="3"></textarea></div>
+      <div class="form-g"><label>תוצאה <span class="req">*</span></label>
+        <select id="f_result">
+          <option value="">בחר תוצאה</option>
+          <option>עבר</option><option>נדחה</option><option>אושר עם חריגה</option>
+        </select>
+      </div>
+    </div>
+    <div class="step-footer">
+      <button class="btn-back" onclick="goStep(4)">← חזור</button>
+      <button class="btn-next" onclick="goStep(6)">הבא ←</button>
+    </div>
+  </div>
+
+  <!-- ── STEP 6: תיעוד — ATP + תמונות ── -->
+  <div class="step-panel" id="p6">
+    <!-- ATP (אחזקה בלבד) -->
+    <div class="card" id="atpCard" style="display:none;">
+      <div class="card-title">
+        📄 ATP — מסמך בדיקות
+        <button class="btn-sm" onclick="openAtp()">פתח / העלה ATP</button>
+      </div>
+      <div id="atpStatus" style="color:var(--muted);font-size:.82rem;">לא צורף מסמך ATP</div>
+      <div class="cap-row" id="capturedRow" style="display:none;"></div>
+    </div>
+
+    <!-- Photos -->
+    <div class="card">
+      <div class="card-title">
+        📷 תמונות מהבחינה
+        <div style="display:flex;gap:7px;">
+          <button class="btn-sm" onclick="document.getElementById('camInput').click()">📷 צלם</button>
+          <button class="btn-sm" onclick="document.getElementById('uplInput').click()">🖼️ העלה</button>
+        </div>
+      </div>
+      <div id="photoGrid" class="photo-grid"></div>
+      <div id="photoCount" style="font-size:.78rem;color:var(--muted);margin-top:8px;">אין תמונות</div>
+      <input type="file" id="camInput" accept="image/*" capture="environment" multiple style="display:none" onchange="addPhotos(this)">
+      <input type="file" id="uplInput" accept="image/*" multiple style="display:none" onchange="addPhotos(this)">
+    </div>
+
+    <div class="step-footer">
+      <button class="btn-back" onclick="goStep(5)">← חזור</button>
+      <button class="btn-next" onclick="goStep(7)">הבא ←</button>
+    </div>
+  </div>
+
+  <!-- ── STEP 7: אישורים + ייצוא ── -->
+  <div class="step-panel" id="p7">
+    <!-- 2. פרטי הבוחן — from login (display only) -->
+    <div class="card">
+      <div class="sec-strip">👤 2. פרטי הבוחן ותוצאה</div>
+      <div class="form-row2">
+        <div class="form-g"><label>שם הבוחן (כולל דרגה)</label>
+          <input type="text" id="f_examinerName" readonly style="color:#a78bfa;font-weight:600;">
+        </div>
+        <div class="form-g"><label>מספר אישי</label>
+          <input type="text" id="f_inspectorPersonalId" readonly style="color:#a78bfa;">
+        </div>
+      </div>
+      <div class="sec-strip" style="margin-top:8px;">✍️ חתימת בוחן (נלקחה בכניסה)</div>
+      <canvas id="sigInspPreview" class="sig-canvas" style="pointer-events:none;" width="800" height="120"></canvas>
+    </div>
+
+    <!-- ממונה -->
+    <div class="card">
+      <div class="sec-strip">✍️ אישורים וחתימות</div>
+      <div class="sig-person-card">
+        <div class="sig-person-title">👤 ממונה / מאשר</div>
+        <div class="form-row2">
+          <div class="form-g"><label>שם מלא</label><input type="text" id="f_supervisorName" placeholder="שם הממונה"></div>
+          <div class="form-g"><label>תפקיד / דרגה</label><input type="text" id="f_supervisorRole" placeholder="תפקיד"></div>
+        </div>
+        <div class="sig-wrap">
+          <div class="sig-top"><span>חתימת הממונה</span><button class="sig-clr" onclick="clrSig('sigSuper')">נקה</button></div>
+          <canvas id="sigSuper" class="sig-canvas" width="800" height="120"></canvas>
+        </div>
+      </div>
+      <div class="sig-person-card">
+        <div class="sig-person-title">🏭 נציג המפעל</div>
+        <div class="form-row2">
+          <div class="form-g"><label>שם מלא</label><input type="text" id="f_factoryRepName" placeholder="שם נציג המפעל"></div>
+          <div class="form-g"><label>תפקיד / דרגה</label><input type="text" id="f_factoryRepRole" placeholder="תפקיד"></div>
+        </div>
+        <div class="sig-wrap">
+          <div class="sig-top"><span>חתימת נציג המפעל</span><button class="sig-clr" onclick="clrSig('sigRep')">נקה</button></div>
+          <canvas id="sigRep" class="sig-canvas" width="800" height="120"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Export -->
+    <div class="card">
+      <div class="sec-strip">🏁 ייצוא</div>
+      <button onclick="exportZIP()" style="width:100%;background:linear-gradient(135deg,#0ea5e9,#0369a1);color:#fff;border:none;border-radius:10px;padding:14px;font-size:1rem;font-weight:700;cursor:pointer;margin-bottom:10px;">
+        📦 ייצא ZIP (נתונים + תמונות + חתימות)
+      </button>
+      <div class="export-g">
+        <button class="btn-pdf" onclick="exportPDF()">📄 הורד PDF</button>
+        <button class="btn-json" onclick="exportJSON()" title="ייצוא JSON ללא תמונות">📤 JSON בלבד</button>
+      </div>
+      <button class="btn-new" onclick="confirmNew()">🔄 בחינה חדשה</button>
+    </div>
+
+    <div class="step-footer">
+      <button class="btn-back" onclick="goStep(6)">← חזור</button>
+    </div>
+  </div>
+
+  </div></div><!-- /main -->
+</div><!-- /appScreen -->
+
+<!-- ══ CALC MODAL ══ -->
+<div class="modal-ov" id="calcModal" onclick="closeModalOut(event,'calcModal')">
+<div class="modal-sheet" onclick="event.stopPropagation()">
+  <div class="modal-hdr"><h3>🧮 מחשבון ISO 2859-1</h3><button class="modal-x" onclick="closeMod('calcModal')">✕</button></div>
+  <div class="calc-g">
+    <div class="form-g"><label>גודל המנה</label><input type="number" id="c_lot" min="1"></div>
+    <div class="form-g"><label>רמת בדיקה</label>
+      <select id="c_level"><option value="II">II (רגיל)</option><option value="I">I</option><option value="III">III</option><option value="S1">S-1</option><option value="S2">S-2</option><option value="S3">S-3</option><option value="S4">S-4</option></select>
+    </div>
+    <div class="form-g"><label>סוג בדיקה</label>
+      <select id="c_type"><option value="normal">רגילה</option><option value="tightened">מחמירה</option><option value="reduced">מצומצמת</option></select>
+    </div>
+    <div class="form-g"><label>AQL (%)</label>
+      <select id="c_aql"><option value="0.065">0.065</option><option value="0.1">0.10</option><option value="0.15">0.15</option><option value="0.25">0.25</option><option value="0.4">0.40</option><option value="0.65">0.65</option><option value="1.0" selected>1.0</option><option value="1.5">1.5</option><option value="2.5">2.5</option><option value="4.0">4.0</option><option value="6.5">6.5</option><option value="10">10</option><option value="15">15</option></select>
+    </div>
+  </div>
+  <button class="btn-calc" onclick="runCalc()">חשב</button>
+  <div class="calc-res" id="calcRes" style="display:none;margin-top:10px;">
+    <div class="calc-row"><span>אות קוד</span><span class="calc-val" id="cr_code">—</span></div>
+    <div class="calc-row"><span>גודל מדגם</span><span class="calc-val" id="cr_size">—</span></div>
+    <div class="calc-row"><span>מספר קבלה (Ac)</span><span class="calc-val" id="cr_ac">—</span></div>
+    <div class="calc-row"><span>מספר דחיה (Re)</span><span class="calc-val" id="cr_re">—</span></div>
+  </div>
+  <button class="btn-apply" id="btnApply" style="display:none;" onclick="applyCalc()">← החל על הטופס</button>
+</div>
+</div>
+
+<!-- ══ ATP MODAL ══ -->
+<div class="modal-ov" id="atpModal" onclick="closeModalOut(event,'atpModal')">
+<div class="modal-sheet" onclick="event.stopPropagation()">
+  <div class="modal-hdr"><h3>📄 ATP — מסמך בדיקות</h3><button class="modal-x" onclick="closeMod('atpModal')">✕</button></div>
+  <div id="atpUpload">
+    <div onclick="document.getElementById('atpFile').click()"
+      style="border:2px dashed var(--border);border-radius:10px;padding:28px;text-align:center;cursor:pointer;color:var(--muted);">
+      <div style="font-size:2rem;margin-bottom:8px;">📄</div>
+      <div>בחר קובץ ATP (PDF)</div>
+    </div>
+    <input type="file" id="atpFile" accept="application/pdf" style="display:none" onchange="loadAtpPDF(this)">
+  </div>
+  <div id="atpViewer" style="display:none;">
+    <div class="atp-page-nav">
+      <button class="atp-nav-btn" onclick="atpPage(-1)">‹ הקודם</button>
+      <span id="atpPageLbl" style="font-size:.8rem;color:var(--muted);">עמוד 1 / 1</span>
+      <button class="atp-nav-btn" onclick="atpPage(1)">הבא ›</button>
+      <button class="atp-nav-btn" onclick="clrAtpDraw()" style="margin-right:auto;color:var(--red);border-color:rgba(239,68,68,.4);">נקה ציור</button>
+    </div>
+    <div class="atp-draw-bar">
+      <button class="atp-tool active" id="tool_pen"   onclick="setAtpTool('pen')">✏️ עט</button>
+      <button class="atp-tool"        id="tool_ok"    onclick="setAtpTool('ok')" style="color:#10b981;font-weight:900;font-size:1.1rem;">✓</button>
+      <button class="atp-tool"        id="tool_x"     onclick="setAtpTool('x')"  style="color:#ef4444;font-weight:900;font-size:1.1rem;">✗</button>
+      <button class="atp-tool"        id="tool_text"  onclick="setAtpTool('text')">🔤 טקסט</button>
+      <button class="atp-tool"        id="tool_erase" onclick="setAtpTool('erase')">🧹</button>
+      <span style="color:var(--muted);font-size:.72rem;margin-right:4px;">צבע:</span>
+      <button class="atp-color sel" style="background:#111111;" onclick="setAtpColor('#111111',this)"></button>
+      <button class="atp-color" style="background:#ef4444;" onclick="setAtpColor('#ef4444',this)"></button>
+      <button class="atp-color" style="background:#10b981;" onclick="setAtpColor('#10b981',this)"></button>
+      <button class="atp-color" style="background:#3b82f6;" onclick="setAtpColor('#3b82f6',this)"></button>
+      <button class="atp-color" style="background:#f59e0b;" onclick="setAtpColor('#f59e0b',this)"></button>
+    </div>
+    <!-- תיבת טקסט צפה לכלי הטקסט -->
+    <div id="atpTextBox" style="display:none;position:fixed;z-index:999;background:#1e293b;border:2px solid #8b5cf6;border-radius:8px;padding:6px;box-shadow:0 8px 24px rgba(0,0,0,.6);">
+      <input id="atpTextInput" type="text" placeholder="הקלד טקסט..." dir="rtl"
+        style="background:#0f172a;color:#e2e8f0;border:none;border-radius:4px;padding:6px 10px;font-size:14px;min-width:180px;direction:rtl;outline:none;">
+      <div style="display:flex;gap:5px;margin-top:5px;">
+        <select id="atpFontSize" style="background:#0f172a;color:#e2e8f0;border:1px solid #334155;border-radius:4px;padding:3px 6px;font-size:.78rem;">
+          <option value="18">קטן</option><option value="26" selected>בינוני</option><option value="36">גדול</option><option value="50">ענק</option>
+        </select>
+        <button onclick="commitAtpText()" style="flex:1;background:#8b5cf6;color:#fff;border:none;border-radius:5px;padding:4px 10px;font-size:.8rem;cursor:pointer;">הוסף ✓</button>
+        <button onclick="cancelAtpText()" style="background:#334155;color:#94a3b8;border:none;border-radius:5px;padding:4px 8px;font-size:.8rem;cursor:pointer;">✕</button>
+      </div>
+    </div>
+    <div class="atp-wrap" id="atpWrap">
+      <canvas id="atpPdfC" class="atp-pdf-c"></canvas>
+      <canvas id="atpDrawC" class="atp-draw-c"></canvas>
+    </div>
+    <div style="padding:6px 0;font-size:.76rem;color:var(--muted);">עמודים שנשמרו:</div>
+    <div class="cap-row" id="modalCapRow"></div>
+    <button onclick="captureAtpPage()"
+      style="width:100%;background:linear-gradient(135deg,var(--green),#059669);color:#fff;border:none;border-radius:9px;padding:11px;font-size:.9rem;font-weight:700;cursor:pointer;margin-top:8px;">
+      📸 שמור עמוד זה כנספח
+    </button>
+  </div>
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+// ═══════ ISO 2859-1 ═══════
+var ISO_LR=[{min:2,max:8,k:'2-8'},{min:9,max:15,k:'9-15'},{min:16,max:25,k:'16-25'},{min:26,max:50,k:'26-50'},{min:51,max:90,k:'51-90'},{min:91,max:150,k:'91-150'},{min:151,max:280,k:'151-280'},{min:281,max:500,k:'281-500'},{min:501,max:1200,k:'501-1200'},{min:1201,max:3200,k:'1201-3200'},{min:3201,max:10000,k:'3201-10000'},{min:10001,max:35000,k:'10001-35000'},{min:35001,max:150000,k:'35001-150000'},{min:150001,max:500000,k:'150001-500000'},{min:500001,max:Infinity,k:'500001+'}];
+var ISO_C={'2-8':{I:'A',II:'A',III:'B',S1:'A',S2:'A',S3:'A',S4:'A'},'9-15':{I:'A',II:'B',III:'C',S1:'A',S2:'A',S3:'A',S4:'A'},'16-25':{I:'B',II:'C',III:'D',S1:'A',S2:'A',S3:'A',S4:'A'},'26-50':{I:'C',II:'D',III:'E',S1:'A',S2:'A',S3:'B',S4:'B'},'51-90':{I:'C',II:'E',III:'F',S1:'B',S2:'B',S3:'B',S4:'C'},'91-150':{I:'D',II:'F',III:'G',S1:'B',S2:'B',S3:'C',S4:'C'},'151-280':{I:'E',II:'G',III:'H',S1:'B',S2:'C',S3:'C',S4:'D'},'281-500':{I:'F',II:'H',III:'J',S1:'B',S2:'C',S3:'D',S4:'E'},'501-1200':{I:'G',II:'J',III:'K',S1:'C',S2:'C',S3:'D',S4:'E'},'1201-3200':{I:'H',II:'K',III:'L',S1:'C',S2:'D',S3:'E',S4:'F'},'3201-10000':{I:'J',II:'L',III:'M',S1:'C',S2:'D',S3:'E',S4:'G'},'10001-35000':{I:'K',II:'M',III:'N',S1:'C',S2:'D',S3:'F',S4:'G'},'35001-150000':{I:'L',II:'N',III:'P',S1:'D',S2:'E',S3:'G',S4:'H'},'150001-500000':{I:'M',II:'P',III:'Q',S1:'D',S2:'E',S3:'G',S4:'J'},'500001+':{I:'N',II:'Q',III:'R',S1:'D',S2:'E',S3:'H',S4:'J'}};
+var ISO_S={A:2,B:3,C:5,D:8,E:13,F:20,G:32,H:50,J:80,K:125,L:200,M:315,N:500,P:800,Q:1250,R:2000};
+var ISO_N={A:{'1.0':[0,1],'1.5':[0,1],'2.5':[0,1],'4.0':[0,1],'6.5':[0,1],'10':[1,2],'15':[1,2]},B:{'1.0':[0,1],'1.5':[0,1],'2.5':[0,1],'4.0':[0,1],'6.5':[1,2],'10':[1,2],'15':[2,3]},C:{'0.65':[0,1],'1.0':[0,1],'1.5':[1,2],'2.5':[1,2],'4.0':[2,3],'6.5':[3,4],'10':[4,5]},D:{'0.65':[0,1],'1.0':[1,2],'1.5':[1,2],'2.5':[2,3],'4.0':[3,4],'6.5':[5,6],'10':[7,8]},E:{'0.65':[1,2],'1.0':[1,2],'1.5':[2,3],'2.5':[3,4],'4.0':[5,6],'6.5':[7,8],'10':[10,11]},F:{'0.4':[1,2],'0.65':[1,2],'1.0':[2,3],'1.5':[3,4],'2.5':[5,6],'4.0':[7,8],'6.5':[10,11]},G:{'0.25':[1,2],'0.4':[1,2],'0.65':[2,3],'1.0':[3,4],'1.5':[5,6],'2.5':[7,8],'4.0':[10,11],'6.5':[14,15]},H:{'0.15':[1,2],'0.25':[1,2],'0.4':[2,3],'0.65':[3,4],'1.0':[5,6],'1.5':[7,8],'2.5':[10,11],'4.0':[14,15]},J:{'0.1':[0,1],'0.15':[0,1],'0.25':[1,2],'0.4':[1,2],'0.65':[2,3],'1.0':[2,3],'1.5':[3,4],'2.5':[5,6],'4.0':[7,8],'6.5':[10,11],'10':[14,15]},K:{'0.1':[0,1],'0.15':[1,2],'0.25':[1,2],'0.4':[2,3],'0.65':[3,4],'1.0':[4,5],'1.5':[6,7],'2.5':[8,9],'4.0':[11,12]},L:{'0.1':[1,2],'0.15':[1,2],'0.25':[2,3],'0.4':[3,4],'0.65':[5,6],'1.0':[6,7],'1.5':[8,9],'2.5':[12,13]},M:{'0.065':[1,2],'0.1':[1,2],'0.15':[2,3],'0.25':[3,4],'0.4':[4,5],'0.65':[6,7],'1.0':[8,9],'1.5':[11,12]},N:{'0.065':[1,2],'0.1':[1,2],'0.15':[2,3],'0.25':[3,4],'0.4':[5,6],'0.65':[9,10],'1.0':[13,14]},P:{'0.065':[1,2],'0.1':[2,3],'0.15':[3,4],'0.25':[5,6],'0.4':[7,8],'0.65':[11,12]},Q:{'0.065':[2,3],'0.1':[3,4],'0.15':[5,6],'0.25':[7,8],'0.4':[10,11]},R:{'0.065':[2,3],'0.1':[3,4],'0.15':[5,6],'0.25':[9,10],'0.4':[14,15]}};
+function isoCalc(lot,level,aql){var rng=null;for(var i=0;i<ISO_LR.length;i++){var r=ISO_LR[i];if(lot>=r.min&&lot<=r.max){rng=r.k;break;}}if(!rng)return null;var code=(ISO_C[rng]||{})[level];if(!code)return null;var sz=ISO_S[code];var pair=(ISO_N[code]||{})[aql];if(!pair)return null;return{code:code,size:sz,ac:pair[0],re:pair[1]};}
+
+// ═══════ CRITERIA ═══════
+var CRITERIA=[
+  {type:'בדיקת תיעוד נלווה ומסמכים',desc:'בדיקת התיעוד המלווה את חומרי הגלם של המוצר ומאשר את שמישותם (COC, COA), איכותם והתאמתם למוגדר במפרטי הייצור והאחזקה שנדרשו ע"י חיל אוויר'},
+  {type:'בדיקת תיעוד נלווה ומסמכים',desc:'קיום מפרטי האחזקה/ייצור, דף תכולה, כרטיס הניתוב המפרט ומאשר את שלבי הייצור/האחזקה'},
+  {type:'בדיקת תיעוד נלווה ומסמכים',desc:'קיום תעודות לבדיקות מעבדה במידה ונדרשו'},
+  {type:'בדיקת תיעוד נלווה ומסמכים',desc:'מערך בדיקות (ATP) ודוח תוצאות הבדיקות (ATR)'},
+  {type:'בדיקת תיעוד נלווה ומסמכים',desc:'חתימת מבצעי הפעולות ואישור הפעולות ע"י גוף מוסמך מפעלי'},
+  {type:'בדיקת תיעוד נלווה ומסמכים',desc:'דוחות סטייה וחריגות אם היו ואישורי נציג חיל האוויר שניתנו'},
+  {type:'בדיקת אמצעי ייצור ובדיקה',desc:'קיום מעקב תוקף שמישות וכיול צב"ד וכלי עבודה במעבדות מוסמכות ISO17025'},
+  {type:'בדיקה ויזואלית',desc:'שלמות ההרכבה, היעדר פגיעות/שריטות, גוון צבע'},
+  {type:'בדיקה מימדית',desc:'עמידה בדרישות השרטוט'},
+  {type:'בדיקה פונקציונלית',desc:'עמידה בדרישות השרטוט וה-ATP'},
+  {type:'סימון ואריזה',desc:'סימון המוצר בהתאם לתיק המוצר או כפי שהוגדר בשרטוט בהתאם לדרישת ח"א'},
+  {type:'סימון ואריזה',desc:'הפריט נארז באריזה מתאימה ושלמה למניעת נזק לפריט, והאריזה ללא נזקים'},
+  {type:'סימון ואריזה',desc:'על האריזה קיים סימון וזיהוי היצרן. וזיהוי של הפריט כולל תאריך הייצור, תאריך פג תוקף ותנאי אחסנה נדרשים'}
+];
+
+var FM={
+  examNumber:'Title',examinerName:'ExaminerName',factoryName:'FactoryName',
+  examDate:'ExamDate',itemDescription:'ItemDescription',quantityForExam:'QuantityForExam',
+  passed:'Passed',failed:'Failed',result:'Result',notes:'Notes',
+  referenceNumber:'ReferenceNumber',requestingUnit:'RequestingUnit',projectName:'ProjectName',
+  examClassification:'ExamClassification',catalogNumber:'CatalogNumber',
+  serialNumbers:'SerialNumbers',examMethod:'ExamMethod',examDescription:'ExamDescription',
+  examSummary:'ExamSummary',professionalBranch:'ProfessionalBranch',
+  requesterDetails:'RequesterDetails',requestDate:'RequestDate',urgency:'Urgency',
+  workOrderNumber:'WorkOrderNumber',milCatalogNumber:'MilCatalogNumber',
+  isRepeatExam:'IsRepeatExam',batchNumber:'BatchNumber',receptionType:'ReceptionType',
+  samplingPlan:'SamplingPlan',sampleSize:'SampleSize',acceptanceNumber:'AcceptanceNumber',
+  rejectionNumber:'RejectionNumber',inspectorPersonalId:'InspectorPersonalId',
+  criterion1:'Criterion1',criterion2:'Criterion2',criterion3:'Criterion3',
+  criterion4:'Criterion4',criterion5:'Criterion5',criterion6:'Criterion6',
+  criterion7:'Criterion7',criterion8:'Criterion8',criterion9:'Criterion9',
+  criterion10:'Criterion10',criterion11:'Criterion11',criterion12:'Criterion12',
+  criterion13:'Criterion13'
+};
+
+// ═══════ STATE ═══════
+var S={
+  examType:'',
+  insp:{first:'',last:'',rank:'',pid:'',bid:'',sig:null},
+  super_:{name:'',role:'',sig:null},
+  rep:{name:'',role:'',sig:null},
+  photos:[],atpPages:[],
+  criteria:CRITERIA.map(function(){return{status:'',note:''};})
+};
+var SKEY='tablet_exam_v4';
+
+// ═══════ EXAM TYPE ═══════
+function selType(t){
+  S.examType=t;
+  document.getElementById('btnRakash').className='et-btn'+(t==='רכש'?' sel':'');
+  document.getElementById('btnAchzaka').className='et-btn'+(t==='אחזקה'?' sel':'');
+  var btn=document.getElementById('btnLogin');
+  btn.disabled=false;
+  btn.textContent='התחל בחינת '+(t==='אחזקה'?'אחזקה':'חימוש מרכש')+' ←';
+}
+
+// ═══════ SIGNATURE CANVASES ═══════
+var _sigInited={};
+function initSig(id){
+  if(_sigInited[id])return;_sigInited[id]=true;
+  var c=document.getElementById(id);if(!c)return;
+  var ctx=c.getContext('2d');
+  ctx.strokeStyle='#6366f1';ctx.lineWidth=2.5;ctx.lineCap='round';ctx.lineJoin='round';
+  var drawing=false,lx=0,ly=0;
+  function pos(e){var r=c.getBoundingClientRect();var sx=c.width/r.width,sy=c.height/r.height;var s=e.touches?e.touches[0]:e;return{x:(s.clientX-r.left)*sx,y:(s.clientY-r.top)*sy};}
+  c.addEventListener('mousedown',function(e){drawing=true;var p=pos(e);lx=p.x;ly=p.y;});
+  c.addEventListener('mousemove',function(e){if(!drawing)return;var p=pos(e);ctx.beginPath();ctx.moveTo(lx,ly);ctx.lineTo(p.x,p.y);ctx.stroke();lx=p.x;ly=p.y;});
+  c.addEventListener('mouseup',function(){drawing=false;c.classList.add('signed');});
+  c.addEventListener('touchstart',function(e){e.preventDefault();drawing=true;var p=pos(e);lx=p.x;ly=p.y;},{passive:false});
+  c.addEventListener('touchmove',function(e){e.preventDefault();if(!drawing)return;var p=pos(e);ctx.beginPath();ctx.moveTo(lx,ly);ctx.lineTo(p.x,p.y);ctx.stroke();lx=p.x;ly=p.y;},{passive:false});
+  c.addEventListener('touchend',function(e){e.preventDefault();drawing=false;c.classList.add('signed');},{passive:false});
+}
+function clrSig(id){var c=document.getElementById(id);if(!c)return;c.getContext('2d').clearRect(0,0,c.width,c.height);c.classList.remove('signed');}
+function capSig(id){
+  var c=document.getElementById(id);if(!c)return null;
+  try{
+    var d=c.getContext('2d').getImageData(0,0,c.width,c.height).data;
+    for(var i=3;i<d.length;i+=4){if(d[i]>10)return c.toDataURL('image/png');}
+    return null; // כל הפיקסלים שקופים — קנבס ריק
+  }catch(e){return null;}
+}
+function drawSigOn(id,dataUrl){
+  var c=document.getElementById(id);if(!c||!dataUrl)return;
+  var img=new Image();img.onload=function(){c.getContext('2d').drawImage(img,0,0,c.width,c.height);c.classList.add('signed');};img.src=dataUrl;
+}
+
+// ═══════ LOGIN ═══════
+function doLogin(){
+  if(!S.examType){toast('יש לבחור סוג בחינה');return;}
+  var fn=gv('l_first').trim(),ln=gv('l_last').trim();
+  var pid=gv('l_pid').trim(),date=gv('l_date'),factory=gv('l_factory').trim();
+  if(!fn||!ln||!pid||!date||!factory){toast('יש למלא שדות חובה');return;}
+  // capSig returns null if canvas is empty (e.g. session restore — canvas is blank on fresh load)
+  // In that case, keep whatever sig was already in S.insp.sig (restored from localStorage)
+  var capturedSig = capSig('sigInsp');
+  S.insp={first:fn,last:ln,rank:gv('l_rank').trim(),pid:pid,bid:gv('l_bid').trim(),
+    sig: capturedSig || S.insp.sig || null};
+  S.factoryName=factory;S.examDate=date;
+
+  // Prefill fields from login
+  var examinerFull=(S.insp.rank?S.insp.rank+' ':'')+fn+' '+ln;
+  document.getElementById('f_examinerName').value=examinerFull;
+  document.getElementById('f_inspectorPersonalId').value=pid;
+  var fn2=document.getElementById('f_factoryName');if(fn2&&!fn2.value)fn2.value=factory;
+  var fd=document.getElementById('f_examDate');if(fd&&!fd.value)fd.value=date;
+  var rd=document.getElementById('f_requestDate');if(rd&&!rd.value)rd.value=date;
+
+  // קוד שדה זמני — הסימוכין הרשמי מוקצה ע״י מערכת הרשת בייבוא ה-ZIP
+  if(!gv('f_referenceNumber')){
+    var now=new Date();
+    document.getElementById('f_referenceNumber').value='שדה-'+
+      now.getFullYear()+pad(now.getMonth()+1)+pad(now.getDate())+'-'+
+      pad(now.getHours())+pad(now.getMinutes());
+  }
+
+  // Header
+  document.getElementById('hdrTitle').textContent='✈️ בחינת '+(S.examType==='אחזקה'?'אחזקה':'חימוש מרכש');
+  document.getElementById('hdrSub').textContent=factory+' | '+fmtDate(date);
+  document.getElementById('typeBadge').textContent=S.examType;
+  document.getElementById('hdrInsp').textContent=fn+' '+ln;
+
+  // ATP visibility
+  document.getElementById('atpCard').style.display=S.examType==='אחזקה'?'block':'none';
+
+  buildCriteria();
+  showScreen('appScreen');
+  setTimeout(function(){
+    initSig('sigSuper');initSig('sigRep');
+    var pc2=document.getElementById('sigInspPreview');
+    if(pc2){
+      pc2.getContext('2d').clearRect(0,0,pc2.width,pc2.height);
+      if(S.insp.sig){
+        pc2.style.borderStyle='solid';pc2.style.borderColor='var(--green)';
+        drawSigOn('sigInspPreview',S.insp.sig);
+      } else {
+        pc2.style.borderStyle='dashed';pc2.style.borderColor='var(--border)';
+      }
+    }
+  },200);
+  save();
+}
+
+// ═══════ SCREENS & STEPS ═══════
+function showScreen(id){document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});document.getElementById(id).classList.add('active');}
+function goBackToLogin(){
+  // Repopulate login fields from current state so user can edit and re-submit
+  if(S.insp.first){
+    document.getElementById('l_first').value=S.insp.first;
+    document.getElementById('l_last').value=S.insp.last;
+    document.getElementById('l_rank').value=S.insp.rank||'';
+    document.getElementById('l_pid').value=S.insp.pid;
+    document.getElementById('l_bid').value=S.insp.bid||'';
+  }
+  if(S.factoryName)document.getElementById('l_factory').value=S.factoryName;
+  if(S.examDate)document.getElementById('l_date').value=S.examDate;
+  showScreen('loginScreen');
+}
+function goStep(n){
+  document.querySelectorAll('.step-panel').forEach(function(p){p.classList.remove('active');});
+  document.querySelectorAll('.step-btn').forEach(function(b){b.classList.remove('active');});
+  document.getElementById('p'+n).classList.add('active');
+  document.getElementById('nb'+n).classList.add('active');
+  document.querySelector('.main-wrap').scrollTop=0;
+  if(n===7){
+    initSig('sigSuper');initSig('sigRep');
+    if(S.super_.sig)drawSigOn('sigSuper',S.super_.sig);
+    if(S.rep.sig)drawSigOn('sigRep',S.rep.sig);
+    // Redraw inspector sig preview (clear first to avoid ghosting)
+    var pc=document.getElementById('sigInspPreview');
+    if(pc){
+      pc.getContext('2d').clearRect(0,0,pc.width,pc.height);
+      if(S.insp.sig){
+        pc.style.borderColor='var(--green)';
+        drawSigOn('sigInspPreview',S.insp.sig);
+      } else {
+        pc.style.borderColor='var(--border)';
+        pc.style.borderStyle='dashed';
+      }
+    }
+  }
+  dSave();
+}
+
+// ═══════ CRITERIA ═══════
+function buildCriteria(){
+  var cont=document.getElementById('criteriaContainer');cont.innerHTML='';
+  CRITERIA.forEach(function(c,i){
+    var st=S.criteria[i].status,nt=S.criteria[i].note;
+    var div=document.createElement('div');
+    div.className='criterion-row'+(st==='תקין'?' ok':st==='לא תקין'?' fail':st==='לא רלוונטי'?' na':'');
+    div.id='cri'+i;
+    div.innerHTML='<div class="cr-hdr"><span class="cr-num">'+(i+1)+'.</span><span class="cr-type">'+c.type+'</span></div>'+
+      '<div class="cr-desc">'+c.desc+'</div>'+
+      '<div class="cr-ctrl">'+
+        '<div class="tog-g">'+
+          '<button class="tog-btn'+(st==='תקין'?' ok2':'')+'" onclick="setCrit('+i+',\'תקין\',this)">✓ תקין</button>'+
+          '<button class="tog-btn'+(st==='לא תקין'?' fail2':'')+'" onclick="setCrit('+i+',\'לא תקין\',this)">✗ לא תקין</button>'+
+          '<button class="tog-btn'+(st==='לא רלוונטי'?' na2':'')+'" onclick="setCrit('+i+',\'לא רלוונטי\',this)">— לא רלוונטי</button>'+
+        '</div>'+
+        '<textarea class="cr-note" onchange="setCritNote('+i+',this.value)" placeholder="הערות...">'+nt+'</textarea>'+
+      '</div>';
+    cont.appendChild(div);
+  });
+}
+function setCrit(i,st,btn){
+  S.criteria[i].status=st;
+  var row=document.getElementById('cri'+i);
+  row.className='criterion-row'+(st==='תקין'?' ok':st==='לא תקין'?' fail':' na');
+  row.querySelectorAll('.tog-btn').forEach(function(b){b.className='tog-btn';});
+  btn.className='tog-btn'+(st==='תקין'?' ok2':st==='לא תקין'?' fail2':' na2');
+  dSave();
+}
+function setCritNote(i,v){S.criteria[i].note=v;dSave();}
+function getCritVal(n){var c=S.criteria[n-1];return(c.status||'')+(c.note?'|'+c.note:'');}
+
+// ═══════ PHOTOS ═══════
+function addPhotos(inp){
+  if(!inp.files||!inp.files.length)return;
+  var files=Array.from(inp.files),pending=files.length;
+  files.forEach(function(f){
+    var rd=new FileReader();
+    rd.onload=function(e){
+      resizeImg(e.target.result,1200,function(r){
+        S.photos.push({dataUrl:r,name:'photo_'+(S.photos.length+1)+'.jpg'});
+        if(--pending===0){renderPhotos();dSave();}
+      });
+    };rd.readAsDataURL(f);
+  });inp.value='';
+}
+function resizeImg(src,max,cb){var img=new Image();img.onload=function(){var w=img.width,h=img.height,r=Math.min(max/w,max/h,1);var c=document.createElement('canvas');c.width=Math.round(w*r);c.height=Math.round(h*r);c.getContext('2d').drawImage(img,0,0,c.width,c.height);cb(c.toDataURL('image/jpeg',.82));};img.onerror=function(){cb(src);};img.src=src;}
+function renderPhotos(){
+  var g=document.getElementById('photoGrid');g.innerHTML='';
+  S.photos.forEach(function(p,i){var d=document.createElement('div');d.className='photo-thumb';d.innerHTML='<img src="'+p.dataUrl+'"><button class="del-ph" onclick="delPhoto('+i+')">✕</button>';g.appendChild(d);});
+  document.getElementById('photoCount').textContent=S.photos.length?S.photos.length+' תמונות':'אין תמונות';
+}
+function delPhoto(i){S.photos.splice(i,1);renderPhotos();dSave();}
+
+// ═══════ ATP ═══════
+var ATP={doc:null,page:1,total:0,tool:'pen',color:'#ef4444',drawing:false,lx:0,ly:0,loaded:false,pageImages:[],drawStates:{}};
+function openAtp(){document.getElementById('atpModal').classList.add('active');renderCapList();}
+// PDF.js CDN fallback (כאשר הקבצים המקומיים לא קיימים)
+var PDFJS_CDN='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+var PDFJS_WORKER_CDN='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+function loadAtpPDF(inp){
+  var file=inp.files[0];if(!file)return;
+  toast('טוען מסמך PDF...');
+  var rd=new FileReader();
+  rd.onload=function(e){
+    window._atpBuf=new Uint8Array(e.target.result);
+    if(window._pdfjsLib){window._atpInit();return;}
+    _loadPdfJs(function(){window._atpInit();});
+  };
+  rd.onerror=function(){toast('שגיאה בקריאת הקובץ');};
+  rd.readAsArrayBuffer(file);inp.value='';
+}
+
+function _loadPdfJs(cb){
+  // שלב 1: נסה ES module מקומי
+  import('./pdf.min.mjs').then(function(L){
+    L.GlobalWorkerOptions.workerSrc='./pdf.worker.min.mjs';
+    window._pdfjsLib=L;cb();
+  }).catch(function(){
+    // שלב 2: נסה UMD מקומי (pdf.min.js)
+    _loadScript('./pdf.min.js',function(){
+      if(window.pdfjsLib){
+        pdfjsLib.GlobalWorkerOptions.workerSrc='./pdf.worker.min.js';
+        window._pdfjsLib=pdfjsLib;cb();
+      } else {
+        // שלב 3: CDN
+        _loadScript(PDFJS_CDN,function(){
+          if(window.pdfjsLib){
+            pdfjsLib.GlobalWorkerOptions.workerSrc=PDFJS_WORKER_CDN;
+            window._pdfjsLib=pdfjsLib;cb();
+          } else {
+            toast('❌ PDF.js לא זמין — הוסף pdf.min.js לתיקייה או התחבר לאינטרנט');
+          }
+        });
+      }
+    });
+  });
+}
+
+function _loadScript(src,cb){
+  var s=document.createElement('script');s.src=src;
+  s.onload=cb;s.onerror=cb; // cb תפעל גם אם נכשל (בדיקת window.pdfjsLib אחרי)
+  document.head.appendChild(s);
+}
+var _atpTextPos={x:0,y:0}; // position for text stamp
+
+window._atpInit=function(){
+  var lib=window._pdfjsLib;
+  lib.getDocument({data:window._atpBuf}).promise.then(function(doc){
+    ATP.doc=doc;ATP.page=1;ATP.total=doc.numPages;
+    ATP.pageImages=[];ATP.drawStates={};
+    var statusEl=document.getElementById('atpStatus');
+    statusEl.textContent='ממיר עמודים לתמונות... 0/'+doc.numPages;
+
+    // Pre-render every page to a high-res image
+    function renderPageToImage(n){
+      if(n>doc.numPages){
+        document.getElementById('atpUpload').style.display='none';
+        document.getElementById('atpViewer').style.display='block';
+        showAtpPage(1);
+        statusEl.textContent='✓ ATP נטען — '+doc.numPages+' עמודים';
+        return;
+      }
+      doc.getPage(n).then(function(page){
+        var vp=page.getViewport({scale:1});
+        var sc=1600/vp.width; // fixed 1600px wide for consistent quality
+        var viewport=page.getViewport({scale:sc});
+        var tc=document.createElement('canvas');
+        tc.width=Math.round(viewport.width);
+        tc.height=Math.round(viewport.height);
+        var ctx=tc.getContext('2d');
+        ctx.fillStyle='#fff';ctx.fillRect(0,0,tc.width,tc.height);
+        page.render({canvasContext:ctx,viewport:viewport}).promise.then(function(){
+          ATP.pageImages.push(tc.toDataURL('image/jpeg',0.92));
+          statusEl.textContent='ממיר... '+n+'/'+doc.numPages;
+          renderPageToImage(n+1);
+        }).catch(function(){ATP.pageImages.push(null);renderPageToImage(n+1);});
+      }).catch(function(){ATP.pageImages.push(null);renderPageToImage(n+1);});
+    }
+    renderPageToImage(1);
+  }).catch(function(e){toast('שגיאה: '+e.message);});
+};
+
+// Display a pre-rendered page image + restore/fresh draw canvas
+function showAtpPage(n){
+  if(!ATP.pageImages||!ATP.pageImages[n-1])return;
+
+  // Save current draw state before switching
+  if(ATP.page!==n){
+    var oldDc=document.getElementById('atpDrawC');
+    if(oldDc&&oldDc.width>0&&oldDc.height>0){
+      ATP.drawStates[ATP.page]=oldDc.toDataURL('image/png');
+    }
+  }
+  ATP.page=n;
+
+  var pc=document.getElementById('atpPdfC');
+  var img=new Image();
+  img.onload=function(){
+    pc.width=img.naturalWidth;pc.height=img.naturalHeight;
+    pc.style.width='100%';pc.style.height='auto';
+    var pctx=pc.getContext('2d');
+    pctx.fillStyle='#fff';pctx.fillRect(0,0,pc.width,pc.height);
+    pctx.drawImage(img,0,0);
+
+    var dc=document.getElementById('atpDrawC');
+    dc.width=pc.width;dc.height=pc.height;
+    dc.style.width='100%';dc.style.height='auto';
+    dc.style.opacity='1';
+
+    var savedDraw=ATP.drawStates[n];
+    if(savedDraw){
+      var di=new Image();
+      di.onload=function(){dc.getContext('2d').drawImage(di,0,0);setupAtpDraw(dc);};
+      di.src=savedDraw;
+    }else{
+      dc.getContext('2d').clearRect(0,0,dc.width,dc.height);
+      setupAtpDraw(dc);
+    }
+    document.getElementById('atpPageLbl').textContent='עמוד '+n+' / '+ATP.total;
+  };
+  img.src=ATP.pageImages[n-1];
+}
+
+function setupAtpDraw(c){
+  // Scale from display coords → canvas coords
+  function pos(e){
+    var r=c.getBoundingClientRect();
+    var sx=c.width/r.width,sy=c.height/r.height;
+    var s=e.touches?e.touches[0]:e;
+    return{x:(s.clientX-r.left)*sx,y:(s.clientY-r.top)*sy};
+  }
+
+  // Stamp ✓ or ✗ at canvas position
+  function stamp(ctx,sym,x,y){
+    var sz=Math.round(c.width*0.07); // ~7% of page width
+    ctx.save();
+    ctx.font='bold '+sz+'px Arial';
+    ctx.textAlign='center';
+    ctx.textBaseline='middle';
+    ctx.fillStyle=sym==='ok'?'#10b981':'#ef4444';
+    // white halo for visibility
+    ctx.strokeStyle='#fff';ctx.lineWidth=sz*0.15;
+    ctx.strokeText(sym==='ok'?'✓':'✗',x,y);
+    ctx.fillText(sym==='ok'?'✓':'✗',x,y);
+    ctx.restore();
+  }
+
+  c.onmousedown=c.ontouchstart=function(e){
+    e.preventDefault&&e.preventDefault();
+    var p=pos(e);
+    var ctx=c.getContext('2d');
+    if(ATP.tool==='ok'||ATP.tool==='x'){
+      stamp(ctx,ATP.tool,p.x,p.y);
+      return;
+    }
+    if(ATP.tool==='text'){
+      _atpTextPos={x:p.x,y:p.y};
+      showAtpTextBox(e);
+      return;
+    }
+    ATP.drawing=true;ATP.lx=p.x;ATP.ly=p.y;
+  };
+
+  c.onmousemove=c.ontouchmove=function(e){
+    e.preventDefault&&e.preventDefault();
+    if(!ATP.drawing)return;
+    if(ATP.tool==='ok'||ATP.tool==='x'||ATP.tool==='text')return;
+    var p=pos(e);var ctx=c.getContext('2d');
+    if(ATP.tool==='erase'){
+      var es=Math.round(c.width*0.03);
+      ctx.clearRect(p.x-es,p.y-es,es*2,es*2);
+    }else{
+      ctx.strokeStyle=ATP.color;
+      ctx.lineWidth=Math.round(c.width*0.004)||2;
+      ctx.lineCap='round';ctx.lineJoin='round';
+      ctx.beginPath();ctx.moveTo(ATP.lx,ATP.ly);ctx.lineTo(p.x,p.y);ctx.stroke();
+    }
+    ATP.lx=p.x;ATP.ly=p.y;
+  };
+
+  c.onmouseup=c.ontouchend=function(e){
+    e&&e.preventDefault&&e.preventDefault();
+    ATP.drawing=false;
+  };
+}
+
+function showAtpTextBox(e){
+  var box=document.getElementById('atpTextBox');
+  var inp=document.getElementById('atpTextInput');
+  var clientX=e.touches?e.touches[0].clientX:e.clientX;
+  var clientY=e.touches?e.touches[0].clientY:e.clientY;
+  box.style.display='block';
+  box.style.right='auto';
+  box.style.left=Math.min(clientX,window.innerWidth-210)+'px';
+  box.style.top=Math.min(clientY+10,window.innerHeight-120)+'px';
+  inp.value='';inp.focus();
+}
+function commitAtpText(){
+  var inp=document.getElementById('atpTextInput');
+  var txt=inp.value.trim();if(!txt)return cancelAtpText();
+  var sz=parseInt(document.getElementById('atpFontSize').value)||26;
+  var dc=document.getElementById('atpDrawC');
+  var ctx=dc.getContext('2d');
+  // scale font size to canvas resolution
+  var scaledSz=Math.round(sz*(dc.width/(document.getElementById('atpWrap').clientWidth||600)));
+  ctx.save();
+  ctx.font='bold '+scaledSz+'px Arial';
+  ctx.fillStyle=ATP.color;
+  ctx.textBaseline='top';
+  ctx.direction='rtl';
+  // white halo
+  ctx.strokeStyle='rgba(255,255,255,0.85)';
+  ctx.lineWidth=scaledSz*0.12;
+  ctx.strokeText(txt,_atpTextPos.x,_atpTextPos.y);
+  ctx.fillText(txt,_atpTextPos.x,_atpTextPos.y);
+  ctx.restore();
+  cancelAtpText();
+}
+function cancelAtpText(){
+  document.getElementById('atpTextBox').style.display='none';
+  document.getElementById('atpTextInput').value='';
+}
+
+function atpPage(d){var np=ATP.page+d;if(np<1||np>ATP.total)return;showAtpPage(np);}
+function setAtpTool(t){
+  ATP.tool=t;
+  document.querySelectorAll('.atp-tool').forEach(function(b){b.classList.remove('active');});
+  var btn=document.getElementById('tool_'+t);if(btn)btn.classList.add('active');
+  // שנה סמן עכבר
+  var dc=document.getElementById('atpDrawC');
+  if(dc)dc.style.cursor=t==='erase'?'cell':t==='text'?'text':'crosshair';
+  if(t!=='text')cancelAtpText();
+}
+function setAtpColor(c,btn){ATP.color=c;document.querySelectorAll('.atp-color').forEach(function(b){b.classList.remove('sel');});btn.classList.add('sel');}
+function clrAtpDraw(){var c=document.getElementById('atpDrawC');if(c)c.getContext('2d').clearRect(0,0,c.width,c.height);ATP.drawStates[ATP.page]=null;}
+
+// Enter בתיבת טקסט → הוסף
+document.addEventListener('keydown',function(e){
+  if(e.key==='Enter'&&document.getElementById('atpTextBox').style.display!=='none'){
+    e.preventDefault();commitAtpText();
+  }
+  if(e.key==='Escape'){cancelAtpText();}
+});
+function captureAtpPage(){
+  var pc=document.getElementById('atpPdfC'),dc=document.getElementById('atpDrawC');
+  var m=document.createElement('canvas');m.width=pc.width;m.height=pc.height;
+  var ctx=m.getContext('2d');ctx.drawImage(pc,0,0);ctx.drawImage(dc,0,0);
+  S.atpPages.push({dataUrl:m.toDataURL('image/jpeg',.88),page:ATP.page});
+  renderCapList();updateAtpRow();dSave();toast('עמוד '+ATP.page+' נשמר ✓');
+}
+function renderCapList(){
+  var el=document.getElementById('modalCapRow');if(!el)return;
+  el.innerHTML='';S.atpPages.forEach(function(p,i){var d=document.createElement('div');d.className='cap-thumb';d.innerHTML='<img src="'+p.dataUrl+'"><button class="del-cap" onclick="delAtp('+i+')">✕</button>';el.appendChild(d);});
+}
+function updateAtpRow(){
+  var row=document.getElementById('capturedRow');if(!row)return;
+  row.innerHTML='';S.atpPages.forEach(function(p,i){var d=document.createElement('div');d.className='cap-thumb';d.innerHTML='<img src="'+p.dataUrl+'"><button class="del-cap" onclick="delAtp('+i+')">✕</button>';row.appendChild(d);});
+  row.style.display=S.atpPages.length?'flex':'none';
+  document.getElementById('atpStatus').textContent=ATP.doc?'ATP נטען — '+ATP.total+' עמודים, '+S.atpPages.length+' נשמרו':'לא צורף מסמך ATP';
+}
+function delAtp(i){S.atpPages.splice(i,1);renderCapList();updateAtpRow();dSave();}
+
+// ═══════ CALC ═══════
+var _calcRes=null;
+function openCalc(){
+  var qty=gv('f_quantityForExam');if(qty)document.getElementById('c_lot').value=qty;
+  document.getElementById('calcRes').style.display='none';
+  document.getElementById('btnApply').style.display='none';
+  document.getElementById('calcModal').classList.add('active');
+}
+function runCalc(){
+  var lot=parseInt(document.getElementById('c_lot').value);
+  if(isNaN(lot)||lot<2){toast('הזן גודל מנה');return;}
+  var lv=document.getElementById('c_level').value,aql=document.getElementById('c_aql').value;
+  var res=isoCalc(lot,lv,aql);
+  if(!res){toast('אין תוצאה לנתונים אלו');return;}
+  _calcRes=res;
+  document.getElementById('cr_code').textContent=res.code;
+  document.getElementById('cr_size').textContent=res.size;
+  document.getElementById('cr_ac').textContent=res.ac;
+  document.getElementById('cr_re').textContent=res.re;
+  document.getElementById('calcRes').style.display='block';
+  document.getElementById('btnApply').style.display='block';
+}
+function applyCalc(){
+  if(!_calcRes)return;
+  document.getElementById('f_sampleSize').value=_calcRes.size;
+  document.getElementById('f_acceptanceNumber').value=_calcRes.ac;
+  document.getElementById('f_rejectionNumber').value=_calcRes.re;
+  var t=document.getElementById('c_type').value;
+  var tHe=t==='tightened'?'מחמירה':t==='reduced'?'מצומצמת':'רגילה';
+  document.getElementById('f_samplingPlan').value=tHe;
+  if(!gv('f_quantityForExam'))document.getElementById('f_quantityForExam').value=document.getElementById('c_lot').value;
+  closeMod('calcModal');toast('הוחל ✓');dSave();
+}
+
+// ═══════ MODALS ═══════
+function closeMod(id){document.getElementById(id).classList.remove('active');}
+function closeModalOut(e,id){if(e.target===document.getElementById(id))closeMod(id);}
+
+// ═══════ BUILD DATA ═══════
+function buildData(){
+  var d={};
+  var fields={
+    referenceNumber:'f_referenceNumber',examNumber:'f_examNumber',
+    examinerName:'f_examinerName',factoryName:'f_factoryName',examDate:'f_examDate',
+    itemDescription:'f_itemDescription',quantityForExam:'f_quantityForExam',
+    passed:'f_passed',failed:'f_failed',result:'f_result',notes:'f_notes',
+    requestingUnit:'f_requestingUnit',projectName:'f_projectName',
+    examClassification:'f_examClassification',catalogNumber:'f_catalogNumber',
+    serialNumbers:'f_serialNumbers',examMethod:'f_examMethod',
+    examDescription:'f_examDescription',examSummary:'f_examSummary',
+    professionalBranch:'f_professionalBranch',requesterDetails:'f_requesterDetails',
+    requestDate:'f_requestDate',urgency:'f_urgency',workOrderNumber:'f_workOrderNumber',
+    milCatalogNumber:'f_milCatalogNumber',isRepeatExam:'f_isRepeatExam',
+    batchNumber:'f_batchNumber',receptionType:'f_receptionType',
+    samplingPlan:'f_samplingPlan',sampleSize:'f_sampleSize',
+    acceptanceNumber:'f_acceptanceNumber',rejectionNumber:'f_rejectionNumber',
+    inspectorPersonalId:'f_inspectorPersonalId'
+  };
+  Object.keys(fields).forEach(function(k){d[FM[k]||k]=gv(fields[k]);});
+  // criteria
+  for(var n=1;n<=13;n++)d[FM['criterion'+n]]=getCritVal(n);
+  return d;
+}
+
+// ═══════ PDF — identical to network openPrintWindow ═══════
+function exportPDF(){
+  var data=buildData();
+  var ref=data[FM.referenceNumber]||data[FM.examNumber]||'טיוטה';
+  var get=function(k){return data[FM[k]]||'';};
+  var fmtD=function(v){if(!v)return'';try{var d=new Date(v);return d.getDate()+'/'+(d.getMonth()+1)+'/'+d.getFullYear();}catch(e){return v;}};
+  var result=get('result');
+  var isPass=result==='עבר';
+  var baseUrl='../ממשק בחינות ברשת/';
+
+  // capture signatures
+  S.super_.name=gv('f_supervisorName');S.super_.role=gv('f_supervisorRole');S.super_.sig=capSig('sigSuper');
+  S.rep.name=gv('f_factoryRepName');S.rep.role=gv('f_factoryRepRole');S.rep.sig=capSig('sigRep');
+  var inspSig=S.insp.sig;var superSig=S.super_.sig;var repSig=S.rep.sig;
+
+  // build criteria HTML
+  var critHtml='';
+  CRITERIA.forEach(function(cr,i){
+    var n=i+1;var raw=get('criterion'+n);var parts=raw?raw.split('|'):[];
+    var status=parts[0]||'';var note=parts[1]||'';
+    var rowCls=status==='תקין'?'crit-ok':status==='לא תקין'?'crit-fail':status==='לא רלוונטי'?'crit-na':'';
+    critHtml+='<tr class="'+rowCls+'">'+
+      '<td style="text-align:center;font-weight:600">'+n+'</td>'+
+      '<td style="font-size:8pt;color:#555">'+cr.type+'</td>'+
+      '<td style="font-size:8.5pt">'+cr.desc+'</td>'+
+      '<td style="text-align:center;font-weight:700">'+status+'</td>'+
+      '<td style="font-size:8.5pt">'+note+'</td>'+
+    '</tr>';
+  });
+
+  // attachment appendix
+  var attHtml='';
+  var hasAtt=S.photos.length||S.atpPages.length;
+  if(hasAtt){
+    attHtml='<div class="section-title">נספח א\' — קבצים מצורפים</div>';
+    S.atpPages.forEach(function(p,i){
+      attHtml+='<div style="margin:10px 0"><div style="font-size:9pt;color:#555;margin-bottom:4px">ATP עמוד '+(i+1)+'</div><img src="'+p.dataUrl+'" class="attachment-img"></div>';
+    });
+    S.photos.forEach(function(p,i){
+      attHtml+='<div style="margin:10px 0"><div style="font-size:9pt;color:#555;margin-bottom:4px">תמונה '+(i+1)+'</div><img src="'+p.dataUrl+'" class="attachment-img"></div>';
+    });
+  }
+
+  var html='<!DOCTYPE html>\n<html dir="rtl" lang="he">\n<head>\n<meta charset="UTF-8">\n'+
+'<base href="'+baseUrl+'">\n'+
+'<title>בחינה '+ref+'</title>\n'+
+'<style>\n'+
+'*{box-sizing:border-box;margin:0;padding:0}\n'+
+'body{font-family:\'Segoe UI\',Arial,sans-serif;direction:rtl;font-size:10pt;color:#111;background:#fff}\n'+
+'.page{max-width:210mm;margin:0 auto;padding:14mm 16mm 20mm}\n'+
+'.doc-header{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #1a3a5c;padding-bottom:8px;margin-bottom:5px}\n'+
+'.doc-header img{height:60px;object-fit:contain}\n'+
+'.doc-header-center{text-align:center;flex:1;padding:0 10px}\n'+
+'.class-stamp{font-size:15pt;font-weight:900;color:#c00;letter-spacing:2px}\n'+
+'.subject-line{text-align:center;margin:14px 0 5px}\n'+
+'.subject-line h2{font-size:12.5pt;font-weight:800;text-decoration:underline}\n'+
+'.subject-line .ref{font-size:9.5pt;color:#444;margin-top:4px}\n'+
+'.proj{font-size:10.5pt;font-weight:600;margin-top:3px}\n'+
+'.section-title{background:#1a3a5c;color:#fff;padding:4px 10px;font-size:10pt;font-weight:700;margin:10px 0 0;page-break-after:avoid}\n'+
+'table{width:100%;border-collapse:collapse}\n'+
+'th,td{border:1px solid #bbb;padding:4px 7px;font-size:9pt;vertical-align:top}\n'+
+'.col-header{background:#c8d4e8;font-weight:700;text-align:center;font-size:9.5pt;padding:6px}\n'+
+'.lbl{font-size:7.5pt;color:#666;display:block;margin-bottom:1px}\n'+
+'.val{font-size:9.5pt;font-weight:600}\n'+
+'.result-box{display:inline-block;border:2.5px solid;padding:5px 22px;font-size:14pt;font-weight:900;border-radius:4px;margin:8px 0}\n'+
+'.pass{color:#1a7a3c;border-color:#1a7a3c;background:#eaf7ee}\n'+
+'.fail{color:#c00;border-color:#c00;background:#fde8e8}\n'+
+'.pend{color:#b45a00;border-color:#b45a00;background:#fef3e2}\n'+
+'.crit-ok{background:#e8f7ee}.crit-fail{background:#fde8e8}.crit-na{background:#f0f0f5}\n'+
+'.sig-section{display:flex;justify-content:space-between;margin-top:22px;padding-top:10px;border-top:1px solid #aaa}\n'+
+'.sig-box{width:30%;text-align:center}\n'+
+'.sig-img{max-width:120px;max-height:50px;display:block;margin:0 auto 4px}\n'+
+'.sig-line{border-top:1.5px solid #333;margin:28px 5px 4px}\n'+
+'.sig-lbl{font-size:8.5pt;color:#444}\n'+
+'.sig-name{font-size:9.5pt;font-weight:700;margin-top:2px}\n'+
+'.attachment-img{max-width:100%;max-height:120mm;display:block;margin:8px auto;border:1px solid #ccc}\n'+
+'.text-block{border:1px solid #bbb;padding:7px 10px;font-size:9.5pt;line-height:1.5;white-space:pre-wrap}\n'+
+'.no-print{position:fixed;top:16px;left:16px;background:#1a3a5c;color:#fff;border:none;padding:10px 22px;cursor:pointer;border-radius:7px;font-size:11pt;font-family:inherit;z-index:999}\n'+
+'@media print{.no-print{display:none!important}.page{padding:8mm 12mm}body{font-size:9.5pt}tr{page-break-inside:avoid}}\n'+
+'</style>\n</head>\n<body>\n'+
+'<button class="no-print" onclick="window.print()">🖨️ הדפסה / שמור כ-PDF</button>\n'+
+'<div class="page">\n'+
+'<div class="doc-header">\n'+
+'  <img src="logo.png" alt="" onerror="this.style.display=\'none\'">\n'+
+'  <div class="doc-header-center"><div class="class-stamp">'+(get('examClassification')||'בלמ"ס')+'</div></div>\n'+
+'  <img src="logo2.png" alt="" onerror="this.style.display=\'none\'">\n'+
+'</div>\n'+
+'<div class="subject-line">\n'+
+'  <h2>הנדון: בחינת '+(S.examType==='אחזקה'?'אחזקה':'רכש חימוש')+'</h2>\n'+
+(get('projectName')?'  <div class="proj">פרויקט: '+get('projectName')+'</div>\n':'')+
+'  <div class="ref">סימוכין: '+ref+'</div>\n'+
+'</div>\n'+
+'<div class="section-title">1. פרטי הדורש ונתונים טכניים</div>\n'+
+'<table>\n'+
+'<tr><th class="col-header" style="width:50%">פרטי הדורש</th><th class="col-header" style="width:50%">נתונים טכניים</th></tr>\n'+
+'<tr><td><span class="lbl">ענף מקצועי</span><span class="val">'+get('professionalBranch')+'</span></td><td><span class="lbl">שם הספק / מפעל</span><span class="val">'+get('factoryName')+'</span></td></tr>\n'+
+'<tr><td><span class="lbl">פרטי מגיש הבקשה</span><span class="val">'+get('requesterDetails')+'</span></td><td><span class="lbl">מק"ט</span><span class="val">'+get('milCatalogNumber')+'</span></td></tr>\n'+
+'<tr><td><span class="lbl">תאריך הבקשה</span><span class="val">'+fmtD(get('requestDate'))+'</span></td><td><span class="lbl">תיאור הפריט</span><span class="val">'+get('itemDescription')+'</span></td></tr>\n'+
+'<tr><td><span class="lbl">דחיפות</span><span class="val">'+get('urgency')+'</span></td><td><span class="lbl">סיווג בחינה</span><span class="val">'+get('examClassification')+'</span></td></tr>\n'+
+'<tr><td><span class="lbl">מספר הזמנת עבודה</span><span class="val">'+get('workOrderNumber')+'</span></td><td><span class="lbl">בחינה חוזרת</span><span class="val">'+get('isRepeatExam')+'</span></td></tr>\n'+
+'<tr><td><span class="lbl">מספר אצווה</span><span class="val">'+get('batchNumber')+'</span></td><td><span class="lbl">יחידה מבקשת</span><span class="val">'+get('requestingUnit')+'</span></td></tr>\n'+
+'</table>\n'+
+'<div class="section-title">2. פרטי הבחינה</div>\n'+
+'<table><tr>\n'+
+'  <td style="width:25%"><span class="lbl">שם הבוחן</span><span class="val">'+get('examinerName')+'</span></td>\n'+
+'  <td style="width:25%"><span class="lbl">מספר אישי</span><span class="val">'+get('inspectorPersonalId')+'</span></td>\n'+
+'  <td style="width:25%"><span class="lbl">תאריך הבחינה</span><span class="val">'+fmtD(get('examDate'))+'</span></td>\n'+
+'  <td style="width:25%"><span class="lbl">סימוכין</span><span class="val">'+ref+'</span></td>\n'+
+'</tr></table>\n'+
+'<div style="text-align:center;margin:8px 0"><span class="result-box '+(isPass?'pass':result==='נדחה'?'fail':'pend')+'">'+result+'</span></div>\n'+
+'<div class="section-title">3. נתוני הפריט</div>\n'+
+'<table>\n'+
+'<tr><th>מק"ט</th><th>תיאור פריט</th><th>כמות לבחינה</th><th>עבר</th><th>נכשל</th></tr>\n'+
+'<tr><td>'+get('milCatalogNumber')+'</td><td>'+get('itemDescription')+'</td>'+
+'<td style="text-align:center">'+get('quantityForExam')+'</td>'+
+'<td style="text-align:center">'+get('passed')+'</td>'+
+'<td style="text-align:center">'+get('failed')+'</td></tr>\n'+
+'</table>\n'+
+'<table style="margin-top:2px"><tr>\n'+
+'  <td style="width:25%"><span class="lbl">תכנית דגימה</span><span class="val">'+get('samplingPlan')+'</span></td>\n'+
+'  <td style="width:25%"><span class="lbl">גודל מדגם</span><span class="val">'+get('sampleSize')+'</span></td>\n'+
+'  <td style="width:25%"><span class="lbl">מספר קבלה (Ac)</span><span class="val">'+get('acceptanceNumber')+'</span></td>\n'+
+'  <td style="width:25%"><span class="lbl">מספר דחייה (Re)</span><span class="val">'+get('rejectionNumber')+'</span></td>\n'+
+'</tr></table>\n'+
+(get('serialNumbers')?'<div style="margin-top:4px;font-size:8.5pt;color:#555">פירוט: '+(get('serialNumbers')||'').split('\n').join(' | ')+'</div>\n':'')+
+'<div class="section-title">4. קריטריוני הבחינה</div>\n'+
+'<table>\n'+
+'<tr style="background:#dde4f0"><th style="width:5%;text-align:center">#</th><th style="width:16%">סוג</th><th>קריטריון מעבר</th><th style="width:14%;text-align:center">תוצאה</th><th style="width:18%">הערות</th></tr>\n'+
+critHtml+
+'</table>\n'+
+(get('examDescription')?'<div class="section-title">5. תיאור הבחינה</div><div class="text-block">'+get('examDescription')+'</div>\n':'')+
+(get('examSummary')?'<div class="section-title">6. סיכום הבחינה</div><div class="text-block">'+get('examSummary')+'</div>\n':'')+
+(get('notes')?'<div class="section-title">הערות</div><div class="text-block">'+get('notes')+'</div>\n':'')+
+'<div class="sig-section">\n'+
+'  <div class="sig-box">\n'+
+(superSig?'    <img src="'+superSig+'" class="sig-img">\n':'')+
+'    <div class="sig-line"></div>\n'+
+(S.super_.name?'    <div class="sig-name">'+S.super_.name+'</div>\n':'')+
+(S.super_.role?'    <div class="sig-lbl">'+S.super_.role+'</div>\n':'')+
+'    <div class="sig-lbl">ממונה / מאשר</div>\n'+
+'  </div>\n'+
+'  <div class="sig-box">\n'+
+(inspSig?'    <img src="'+inspSig+'" class="sig-img">\n':'')+
+'    <div class="sig-line"></div>\n'+
+'    <div class="sig-name">'+get('examinerName')+'</div>\n'+
+'    <div class="sig-lbl">בוחן'+(get('inspectorPersonalId')?' — מ"א '+get('inspectorPersonalId'):'')+(S.insp.bid?' — מ.ב '+S.insp.bid:'')+'</div>\n'+
+'  </div>\n'+
+'  <div class="sig-box">\n'+
+(repSig?'    <img src="'+repSig+'" class="sig-img">\n':'')+
+'    <div class="sig-line"></div>\n'+
+(S.rep.name?'    <div class="sig-name">'+S.rep.name+'</div>\n':'')+
+(S.rep.role?'    <div class="sig-lbl">'+S.rep.role+'</div>\n':'')+
+'    <div class="sig-lbl">נציג המפעל</div>\n'+
+'  </div>\n'+
+'</div>\n'+
+attHtml+
+'</div></body></html>';
+
+  var win=window.open('','_blank');
+  if(!win){toast('אפשר חלונות קופצים בדפדפן');return;}
+  win.document.write(html);win.document.close();win.focus();
+  toast('PDF נוצר — הדפס מהחלון שנפתח');
+}
+
+// ═══════ EXPORT JSON ═══════
+function exportJSON(){
+  S.super_.name=gv('f_supervisorName');S.super_.role=gv('f_supervisorRole');S.super_.sig=capSig('sigSuper');
+  S.rep.name=gv('f_factoryRepName');S.rep.role=gv('f_factoryRepRole');S.rep.sig=capSig('sigRep');
+  var wrap={
+    _source:'tablet',_version:'3.0',_exportDate:new Date().toISOString(),
+    _examType:S.examType,
+    _inspectorSig:S.insp.sig||null,
+    _supervisorName:S.super_.name,_supervisorRole:S.super_.role,_supervisorSig:S.super_.sig||null,
+    _factoryRepName:S.rep.name,_factoryRepRole:S.rep.role,_factoryRepSig:S.rep.sig||null,
+    _photos:S.photos,_atpPages:S.atpPages,
+    data:buildData()
+  };
+  var ref=gv('f_referenceNumber')||'exam';
+  var fname='exam_'+ref.replace(/[^a-zA-Z0-9\-_]/g,'_')+'_'+new Date().toISOString().substring(0,10)+'.json';
+  dlBlob(new Blob([JSON.stringify(wrap,null,2)],{type:'application/json'}),fname);
+  toast('JSON יוצא: '+fname);
+}
+
+// ═══════ ZIP EXPORT ═══════
+function dataUrlToU8(dataUrl){
+  var b64=dataUrl.split(',')[1];
+  var bin=atob(b64);var u8=new Uint8Array(bin.length);
+  for(var i=0;i<bin.length;i++)u8[i]=bin.charCodeAt(i);
+  return u8;
+}
+
+var _jszip=null;
+function _loadJSZip(cb){
+  if(_jszip){cb(_jszip);return;}
+  if(window.JSZip){_jszip=window.JSZip;cb(_jszip);return;}
+  // נסה מקומי קודם
+  var s=document.createElement('script');s.src='./jszip.min.js';
+  s.onload=function(){if(window.JSZip){_jszip=window.JSZip;cb(_jszip);}else{_loadJSZipCDN(cb);}};
+  s.onerror=function(){_loadJSZipCDN(cb);};
+  document.head.appendChild(s);
+}
+function _loadJSZipCDN(cb){
+  var s=document.createElement('script');
+  s.src='https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+  s.onload=function(){_jszip=window.JSZip||null;cb(_jszip);};
+  s.onerror=function(){cb(null);};
+  document.head.appendChild(s);
+}
+
+function exportZIP(){
+  // לכוד חתימות ממונה ונציג לפני ייצוא
+  S.super_.name=gv('f_supervisorName');S.super_.role=gv('f_supervisorRole');S.super_.sig=capSig('sigSuper');
+  S.rep.name=gv('f_factoryRepName');S.rep.role=gv('f_factoryRepRole');S.rep.sig=capSig('sigRep');
+
+  _loadJSZip(function(JSZip){
+    if(!JSZip){toast('JSZip לא זמין — מייצא JSON במקום');exportJSON();return;}
+    var zip=new JSZip();
+
+    // exam.json — נתונים בלבד, ללא תמונות
+    var meta={
+      _source:'tablet',_version:'4.0',_examType:S.examType,
+      _exportDate:new Date().toISOString(),
+      _supervisorName:S.super_.name,_supervisorRole:S.super_.role,
+      _factoryRepName:S.rep.name,_factoryRepRole:S.rep.role,
+      _photoCount:S.photos.length,_atpCount:S.atpPages.length,
+      _hasSigs:{inspector:!!S.insp.sig,supervisor:!!S.super_.sig,rep:!!S.rep.sig},
+      data:buildData()
+    };
+    zip.file('exam.json',JSON.stringify(meta,null,2));
+
+    // חתימות
+    if(S.insp.sig)   zip.file('signatures/sig_inspector.png',  dataUrlToU8(S.insp.sig));
+    if(S.super_.sig) zip.file('signatures/sig_supervisor.png', dataUrlToU8(S.super_.sig));
+    if(S.rep.sig)    zip.file('signatures/sig_rep.png',        dataUrlToU8(S.rep.sig));
+
+    // תמונות
+    S.photos.forEach(function(p,i){
+      var name=p.name||('photo_'+(i+1)+'.jpg');
+      try{zip.file('photos/'+name,dataUrlToU8(p.dataUrl));}catch(e){}
+    });
+
+    // עמודי ATP
+    S.atpPages.forEach(function(p,i){
+      try{zip.file('atp/atp_page_'+(p.page||(i+1))+'.jpg',dataUrlToU8(p.dataUrl));}catch(e){}
+    });
+
+    toast('יוצר ZIP...');
+    zip.generateAsync({type:'blob',compression:'DEFLATE',compressionOptions:{level:6}})
+    .then(function(blob){
+      var ref=gv('f_referenceNumber')||'exam';
+      var fname='exam_'+ref.replace(/[^a-zA-Z0-9\-_]/g,'_')+'_'+new Date().toISOString().substring(0,10)+'.zip';
+      dlBlob(blob,fname);
+      toast('📦 ZIP יוצא: '+fname+' ('+S.photos.length+' תמונות, '+(S.insp.sig?'חתימות':'')+')');
+    }).catch(function(e){toast('שגיאת ZIP: '+e.message);});
+  });
+}
+
+// ═══════ SAVE / LOAD ═══════
+function fieldIds(){return['f_referenceNumber','f_examNumber','f_projectName','f_requestingUnit','f_professionalBranch','f_requesterDetails','f_requestDate','f_urgency','f_workOrderNumber','f_examClassification','f_factoryName','f_milCatalogNumber','f_isRepeatExam','f_batchNumber','f_receptionType','f_examDate','f_examinerName','f_inspectorPersonalId','f_catalogNumber','f_itemDescription','f_quantityForExam','f_examMethod','f_serialNumbers','f_samplingPlan','f_sampleSize','f_acceptanceNumber','f_rejectionNumber','f_passed','f_failed','f_examDescription','f_examSummary','f_notes','f_result','f_supervisorName','f_supervisorRole','f_factoryRepName','f_factoryRepRole'];}
+function collectFields(){var o={};fieldIds().forEach(function(id){var el=document.getElementById(id);if(el)o[id]=el.value;});return o;}
+function applyFields(o){Object.keys(o).forEach(function(id){var el=document.getElementById(id);if(el)el.value=o[id]||'';});}
+function save(){
+  // שמור ב-2 שלבים: קודם ללא תמונות (קל), ואז עם תמונות (אם יש מקום)
+  var base={
+    examType:S.examType,insp:S.insp,super_:S.super_,rep:S.rep,
+    factoryName:S.factoryName,examDate:S.examDate,
+    criteria:S.criteria,fields:collectFields()
+  };
+  try{localStorage.setItem(SKEY,JSON.stringify(base));}catch(e){}
+  // נסה להוסיף תמונות ו-ATP
+  try{
+    var full=Object.assign({},base,{photos:S.photos,atpPages:S.atpPages});
+    localStorage.setItem(SKEY,JSON.stringify(full));
+  }catch(e){
+    // נשאר עם הגרסה ללא תמונות — לא נורא, JSON Export תמיד כולל הכל
+    console.warn('localStorage full — photos not autosaved (OK, use JSON Export)');
+  }
+  var l=document.getElementById('autoLbl');
+  if(l)l.textContent='✓ נשמר '+new Date().toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});
+}
+var _st=null;function dSave(){clearTimeout(_st);_st=setTimeout(save,700);}
+function loadSaved(){
+  try{
+    var raw=localStorage.getItem(SKEY);if(!raw)return false;
+    var d=JSON.parse(raw);
+    if(d.criteria)S.criteria=d.criteria;
+    if(d.examType)S.examType=d.examType;
+    if(d.insp)S.insp=d.insp;
+    if(d.super_)S.super_=d.super_;
+    if(d.rep)S.rep=d.rep;
+    if(d.photos)S.photos=d.photos;
+    if(d.atpPages)S.atpPages=d.atpPages;
+    S.factoryName=d.factoryName||'';S.examDate=d.examDate||'';
+    if(d.fields)applyFields(d.fields);
+    return true;
+  }catch(e){return false;}
+}
+
+// ═══════ NEW EXAM ═══════
+function confirmNew(){
+  var msg='לפתוח בחינה חדשה?\n\nלחץ אישור לניקוי הטופס.\nאם רוצה לשמור — לחץ ביטול, ייצא JSON ואז חדש.';
+  if(!confirm(msg))return;
+  resetAll();
+}
+function resetAll(){
+  // אפס מצב
+  S.criteria=CRITERIA.map(function(){return{status:'',note:''};});
+  S.photos=[];S.atpPages=[];S.examType='';
+  S.insp={first:'',last:'',rank:'',pid:'',bid:'',sig:null};
+  S.super_={name:'',role:'',sig:null};S.rep={name:'',role:'',sig:null};
+  localStorage.removeItem(SKEY);
+
+  // נקה שדות טופס
+  fieldIds().forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+
+  // נקה שדות כניסה
+  ['l_first','l_last','l_rank','l_pid','l_bid','l_factory'].forEach(function(id){
+    var el=document.getElementById(id);if(el)el.value='';
+  });
+  document.getElementById('l_date').value=new Date().toISOString().substring(0,10);
+
+  // נקה חתימות
+  clrSig('sigInsp');
+  clrSig('sigSuper');
+  clrSig('sigRep');
+
+  // אפס UI
+  document.getElementById('btnRakash').className='et-btn';
+  document.getElementById('btnAchzaka').className='et-btn';
+  document.getElementById('btnLogin').disabled=true;
+  document.getElementById('btnLogin').textContent='בחר סוג בחינה ←';
+
+  // נקה תמונות, ATP וקריטריונים מה-UI
+  renderPhotos();
+  buildCriteria();
+  updateAtpRow();
+
+  // אפס ATP viewer
+  var atpInput=document.getElementById('atpFileInput');if(atpInput)atpInput.value='';
+  var atpViewer=document.getElementById('atpViewer');if(atpViewer)atpViewer.style.display='none';
+
+  showScreen('loginScreen');
+}
+
+// ═══════ UTILS ═══════
+function gv(id){var el=document.getElementById(id);return el?el.value:'';}
+function fmtDate(d){if(!d)return'';try{var dt=new Date(d);return dt.getDate()+'/'+(dt.getMonth()+1)+'/'+dt.getFullYear();}catch(e){return d;}}
+function pad(n){return String(n).padStart(2,'0');}
+function dlBlob(blob,name){var url=URL.createObjectURL(blob);var a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();setTimeout(function(){document.body.removeChild(a);URL.revokeObjectURL(url);},1000);}
+function toast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(function(){t.classList.remove('show');},2800);}
+
+// ═══════ INIT ═══════
+document.addEventListener('DOMContentLoaded',function(){
+  document.getElementById('l_date').value=new Date().toISOString().substring(0,10);
+  initSig('sigInsp');
+  // auto-save on field change
+  fieldIds().forEach(function(id){var el=document.getElementById(id);if(el){el.addEventListener('change',dSave);el.addEventListener('input',dSave);}});
+  // restore session
+  var restored=loadSaved();
+  if(restored&&S.examType&&S.insp.first){
+    selType(S.examType);
+    document.getElementById('l_first').value=S.insp.first;
+    document.getElementById('l_last').value=S.insp.last;
+    document.getElementById('l_rank').value=S.insp.rank||'';
+    document.getElementById('l_pid').value=S.insp.pid;
+    document.getElementById('l_bid').value=S.insp.bid||'';
+    document.getElementById('l_factory').value=S.factoryName||'';
+    document.getElementById('l_date').value=S.examDate||'';
+    doLogin();
+    buildCriteria();renderPhotos();updateAtpRow();
+    toast('בחינה קודמת שוחזרה ✓');
+  }
+});
+</script>
+</body>
+</html>
