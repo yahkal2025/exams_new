@@ -332,30 +332,28 @@ select option{background:#1e293b;}
   <div class="step-panel active" id="p0">
     <div class="card">
       <div class="sec-strip">📋 1א. פרטי הדורש</div>
-      <div class="form-row2">
-        <div class="form-g">
-          <label>קוד שדה (זמני) <span style="font-size:.72rem;color:var(--muted)">← הסימוכין הרשמי יוקצה ברשת</span></label>
-          <input type="text" id="f_referenceNumber" readonly style="color:#f59e0b;font-weight:600;" title="קוד זמני לשימוש בשטח — הסימוכין הרשמי נקבע ע״י מערכת הרשת בייבוא הZIP">
-        </div>
-        <div class="form-g"><label>מספר בחינה <span class="req">*</span></label><input type="text" id="f_examNumber"></div>
+      <!-- f_examNumber hidden — maps to SharePoint Title (required), auto-filled from referenceNumber -->
+      <input type="hidden" id="f_examNumber">
+      <div class="form-g">
+        <label>קוד שדה (זמני) <span style="font-size:.72rem;color:var(--muted)">← הסימוכין הרשמי יוקצה ברשת</span></label>
+        <input type="text" id="f_referenceNumber" readonly style="color:#f59e0b;font-weight:600;" title="קוד זמני לשימוש בשטח — הסימוכין הרשמי נקבע ע״י מערכת הרשת בייבוא הZIP">
       </div>
       <div class="form-row2">
         <div class="form-g"><label>שם הפרויקט</label><input type="text" id="f_projectName" placeholder="לדוגמה: RAMPAGE"></div>
-        <div class="form-g"><label>גוף דורש הבחינה</label><input type="text" id="f_requestingUnit"></div>
+        <div class="form-g"><label>גוף דורש / ענף מקצועי</label><input type="text" id="f_requestingUnit"></div>
       </div>
       <div class="form-row2">
-        <div class="form-g"><label>ענף מקצועי</label><input type="text" id="f_professionalBranch"></div>
         <div class="form-g"><label>פרטי מגיש הבקשה</label><input type="text" id="f_requesterDetails"></div>
+        <div class="form-g"><label>תאריך הבקשה</label><input type="date" id="f_requestDate"></div>
       </div>
       <div class="form-row2">
-        <div class="form-g"><label>תאריך הבקשה</label><input type="date" id="f_requestDate"></div>
         <div class="form-g"><label>דחיפות</label>
           <select id="f_urgency"><option value="">בחר</option><option>גבוהה</option><option>רגילה</option></select>
         </div>
-      </div>
-      <div class="form-row2">
         <div class="form-g"><label>מספר הזמנת עבודה</label><input type="text" id="f_workOrderNumber"></div>
-        <div class="form-g"><label>סיווג הבחינה</label><input type="text" id="f_examClassification" placeholder="שמור / סודי / בלמ&quot;ס"></div>
+      </div>
+      <div class="form-g"><label>סיווג הבחינה</label>
+        <select id="f_examClassification"><option value="">בחר</option><option>בלמ"ס</option><option>שמור</option><option>סודי</option></select>
       </div>
     </div>
     <div class="step-footer"><button class="btn-next" onclick="goStep(1)">הבא ←</button></div>
@@ -377,7 +375,7 @@ select option{background:#1e293b;}
       </div>
       <div class="form-row2">
         <div class="form-g"><label>סוג הקליטה</label>
-          <select id="f_receptionType"><option value="">בחר</option><option>רכש</option><option>אחזקה</option></select>
+          <input type="text" id="f_receptionType" readonly style="color:#a78bfa;font-weight:600;" title="נקבע לפי בחירת הבוחן בכניסה">
         </div>
         <div class="form-g"><label>תאריך הבחינה <span class="req">*</span></label><input type="date" id="f_examDate"></div>
       </div>
@@ -393,7 +391,7 @@ select option{background:#1e293b;}
     <div class="card">
       <div class="sec-strip">📦 3. נתוני הפריט</div>
       <div class="form-row2">
-        <div class="form-g"><label>מק"ט יצרן</label><input type="text" id="f_catalogNumber"></div>
+        <div class="form-g"><label>יצרן</label><input type="text" id="f_catalogNumber"></div>
         <div class="form-g"><label>תיאור הפריט <span class="req">*</span></label><input type="text" id="f_itemDescription"></div>
       </div>
       <div class="form-row2">
@@ -428,8 +426,12 @@ select option{background:#1e293b;}
         <div class="form-g"><label>מספר דחיה (ד)</label><input type="number" id="f_rejectionNumber" min="0"></div>
       </div>
       <div class="form-row2">
-        <div class="form-g"><label>כמות שעברה בחינה</label><input type="number" id="f_passed" min="0"></div>
-        <div class="form-g"><label>כמות שנכשלה בחינה</label><input type="number" id="f_failed" min="0"></div>
+        <div class="form-g"><label>כמות שעברה בחינה</label><input type="number" id="f_passed" min="0" oninput="checkSamplingResult()"></div>
+        <div class="form-g"><label>כמות שנכשלה בחינה</label><input type="number" id="f_failed" min="0" oninput="checkSamplingResult()"></div>
+      </div>
+      <div id="samplingWarn" style="display:none;margin-top:10px;padding:12px 14px;background:rgba(239,68,68,.12);border:1.5px solid rgba(239,68,68,.5);border-radius:10px;color:#fca5a5;font-size:.88rem;font-weight:700;">
+        ⚠️ שים לב — הבחינה נכשלה!<br>
+        <span style="font-weight:400;font-size:.82rem;">יש לדחות את הבחינה או לאשר בחריגה (בשלב 6)</span>
       </div>
     </div>
     <div class="step-footer">
@@ -465,10 +467,15 @@ select option{background:#1e293b;}
       <div class="sec-strip">📎 7. הערות</div>
       <div class="form-g"><label>הערות</label><textarea id="f_notes" rows="3"></textarea></div>
       <div class="form-g"><label>תוצאה <span class="req">*</span></label>
-        <select id="f_result">
+        <select id="f_result" onchange="onResultChange(this.value)">
           <option value="">בחר תוצאה</option>
           <option>עבר</option><option>נדחה</option><option>אושר עם חריגה</option>
         </select>
+      </div>
+      <div id="exceptionFields" style="display:none;padding:12px;background:rgba(245,158,11,.07);border:1.5px solid rgba(245,158,11,.35);border-radius:10px;margin-top:8px;">
+        <div style="color:#fbbf24;font-size:.82rem;font-weight:700;margin-bottom:10px;">⚠️ פרטי החריגה</div>
+        <div class="form-g"><label>מי אישר את החריגה</label><input type="text" id="f_exceptionApprover" placeholder="שם, דרגה ותפקיד המאשר"></div>
+        <div class="form-g" style="margin-bottom:0;"><label>פירוט החריגה</label><textarea id="f_exceptionDetails" rows="3" placeholder="תאר את מהות החריגה שאושרה..."></textarea></div>
       </div>
     </div>
     <div class="step-footer">
@@ -695,8 +702,9 @@ var FM={
   referenceNumber:'ReferenceNumber',requestingUnit:'RequestingUnit',projectName:'ProjectName',
   examClassification:'ExamClassification',catalogNumber:'CatalogNumber',
   serialNumbers:'SerialNumbers',examMethod:'ExamMethod',examDescription:'ExamDescription',
-  examSummary:'ExamSummary',professionalBranch:'ProfessionalBranch',
+  examSummary:'ExamSummary',
   requesterDetails:'RequesterDetails',requestDate:'RequestDate',urgency:'Urgency',
+  exceptionApprover:'ExceptionApprover',exceptionDetails:'ExceptionDetails',
   workOrderNumber:'WorkOrderNumber',milCatalogNumber:'MilCatalogNumber',
   isRepeatExam:'IsRepeatExam',batchNumber:'BatchNumber',receptionType:'ReceptionType',
   samplingPlan:'SamplingPlan',sampleSize:'SampleSize',acceptanceNumber:'AcceptanceNumber',
@@ -779,6 +787,10 @@ function doLogin(){
   var fn2=document.getElementById('f_factoryName');if(fn2&&!fn2.value)fn2.value=factory;
   var fd=document.getElementById('f_examDate');if(fd&&!fd.value)fd.value=date;
   var rd=document.getElementById('f_requestDate');if(rd&&!rd.value)rd.value=date;
+  // Auto-fill reception type from exam type selection
+  document.getElementById('f_receptionType').value=S.examType;
+  // Keep hidden examNumber in sync with referenceNumber (maps to SharePoint Title)
+  document.getElementById('f_examNumber').value=gv('f_referenceNumber');
 
   // קוד שדה זמני — הסימוכין הרשמי מוקצה ע״י מערכת הרשת בייבוא ה-ZIP
   if(!gv('f_referenceNumber')){
@@ -836,6 +848,11 @@ function goStep(n){
   document.getElementById('p'+n).classList.add('active');
   document.getElementById('nb'+n).classList.add('active');
   document.querySelector('.main-wrap').scrollTop=0;
+  if(n===5){
+    // restore exception fields visibility on step load
+    onResultChange(document.getElementById('f_result').value);
+    checkSamplingResult();
+  }
   if(n===7){
     initSig('sigSuper');initSig('sigRep');
     if(S.super_.sig)drawSigOn('sigSuper',S.super_.sig);
@@ -872,7 +889,7 @@ function buildCriteria(){
           '<button class="tog-btn'+(st==='לא תקין'?' fail2':'')+'" onclick="setCrit('+i+',\'לא תקין\',this)">✗ לא תקין</button>'+
           '<button class="tog-btn'+(st==='לא רלוונטי'?' na2':'')+'" onclick="setCrit('+i+',\'לא רלוונטי\',this)">— לא רלוונטי</button>'+
         '</div>'+
-        '<textarea class="cr-note" onchange="setCritNote('+i+',this.value)" placeholder="הערות...">'+nt+'</textarea>'+
+        '<textarea class="cr-note" onchange="setCritNote('+i+',this.value)" placeholder="'+(st==='לא תקין'?'⚠️ חובה לרשום הערה על הליקוי!':'הערות...')+'" style="'+(st==='לא תקין'?'border-color:var(--orange);background:rgba(245,158,11,.06);':'')+'">'+(nt||'')+'</textarea>'+
       '</div>';
     cont.appendChild(div);
   });
@@ -883,9 +900,35 @@ function setCrit(i,st,btn){
   row.className='criterion-row'+(st==='תקין'?' ok':st==='לא תקין'?' fail':' na');
   row.querySelectorAll('.tog-btn').forEach(function(b){b.className='tog-btn';});
   btn.className='tog-btn'+(st==='תקין'?' ok2':st==='לא תקין'?' fail2':' na2');
+  // "לא תקין" — הערה חובה
+  var noteEl=row.querySelector('.cr-note');
+  if(noteEl){
+    if(st==='לא תקין'){
+      noteEl.placeholder='⚠️ חובה לרשום הערה על הליקוי!';
+      noteEl.style.borderColor='var(--orange)';
+      noteEl.style.background='rgba(245,158,11,.06)';
+      setTimeout(function(){noteEl.focus();},80);
+    }else{
+      noteEl.placeholder='הערות...';
+      noteEl.style.borderColor='';
+      noteEl.style.background='';
+    }
+  }
   dSave();
 }
 function setCritNote(i,v){S.criteria[i].note=v;dSave();}
+
+function checkSamplingResult(){
+  var failed=parseInt(document.getElementById('f_failed').value)||0;
+  var re=parseInt(document.getElementById('f_rejectionNumber').value)||0;
+  var warn=document.getElementById('samplingWarn');
+  if(warn)warn.style.display=(re>0&&failed>=re)?'block':'none';
+}
+
+function onResultChange(val){
+  var ef=document.getElementById('exceptionFields');
+  if(ef)ef.style.display=(val==='אושר עם חריגה')?'block':'none';
+}
 function getCritVal(n){var c=S.criteria[n-1];return(c.status||'')+(c.note?'|'+c.note:'');}
 
 // ═══════ PHOTOS ═══════
@@ -1339,12 +1382,12 @@ function exportPDF(){
 '<div class="section-title">1. פרטי הדורש ונתונים טכניים</div>\n'+
 '<table>\n'+
 '<tr><th class="col-header" style="width:50%">פרטי הדורש</th><th class="col-header" style="width:50%">נתונים טכניים</th></tr>\n'+
-'<tr><td><span class="lbl">ענף מקצועי</span><span class="val">'+get('professionalBranch')+'</span></td><td><span class="lbl">שם הספק / מפעל</span><span class="val">'+get('factoryName')+'</span></td></tr>\n'+
-'<tr><td><span class="lbl">פרטי מגיש הבקשה</span><span class="val">'+get('requesterDetails')+'</span></td><td><span class="lbl">מק"ט</span><span class="val">'+get('milCatalogNumber')+'</span></td></tr>\n'+
+'<tr><td><span class="lbl">גוף דורש / ענף מקצועי</span><span class="val">'+get('requestingUnit')+'</span></td><td><span class="lbl">שם הספק / מפעל</span><span class="val">'+get('factoryName')+'</span></td></tr>\n'+
+'<tr><td><span class="lbl">פרטי מגיש הבקשה</span><span class="val">'+get('requesterDetails')+'</span></td><td><span class="lbl">מסח"א</span><span class="val">'+get('milCatalogNumber')+'</span></td></tr>\n'+
 '<tr><td><span class="lbl">תאריך הבקשה</span><span class="val">'+fmtD(get('requestDate'))+'</span></td><td><span class="lbl">תיאור הפריט</span><span class="val">'+get('itemDescription')+'</span></td></tr>\n'+
 '<tr><td><span class="lbl">דחיפות</span><span class="val">'+get('urgency')+'</span></td><td><span class="lbl">סיווג בחינה</span><span class="val">'+get('examClassification')+'</span></td></tr>\n'+
 '<tr><td><span class="lbl">מספר הזמנת עבודה</span><span class="val">'+get('workOrderNumber')+'</span></td><td><span class="lbl">בחינה חוזרת</span><span class="val">'+get('isRepeatExam')+'</span></td></tr>\n'+
-'<tr><td><span class="lbl">מספר אצווה</span><span class="val">'+get('batchNumber')+'</span></td><td><span class="lbl">יחידה מבקשת</span><span class="val">'+get('requestingUnit')+'</span></td></tr>\n'+
+'<tr><td><span class="lbl">מספר אצווה</span><span class="val">'+get('batchNumber')+'</span></td><td><span class="lbl">סוג קליטה</span><span class="val">'+get('receptionType')+'</span></td></tr>\n'+
 '</table>\n'+
 '<div class="section-title">2. פרטי הבחינה</div>\n'+
 '<table><tr>\n'+
@@ -1354,10 +1397,15 @@ function exportPDF(){
 '  <td style="width:25%"><span class="lbl">סימוכין</span><span class="val">'+ref+'</span></td>\n'+
 '</tr></table>\n'+
 '<div style="text-align:center;margin:8px 0"><span class="result-box '+(isPass?'pass':result==='נדחה'?'fail':'pend')+'">'+result+'</span></div>\n'+
+(result==='אושר עם חריגה'&&(get('exceptionApprover')||get('exceptionDetails'))?
+'<div style="border:1.5px solid #e6900a;background:#fff8ec;padding:8px 12px;margin:6px 0;border-radius:4px;font-size:9.5pt;">'+
+'<b>⚠️ פרטי החריגה:</b><br>'+
+(get('exceptionApprover')?'<b>מאשר:</b> '+get('exceptionApprover')+'<br>':'')+
+(get('exceptionDetails')?'<b>פירוט:</b> '+get('exceptionDetails'):'')+'</div>\n':'')+'
 '<div class="section-title">3. נתוני הפריט</div>\n'+
 '<table>\n'+
-'<tr><th>מק"ט</th><th>תיאור פריט</th><th>כמות לבחינה</th><th>עבר</th><th>נכשל</th></tr>\n'+
-'<tr><td>'+get('milCatalogNumber')+'</td><td>'+get('itemDescription')+'</td>'+
+'<tr><th>יצרן</th><th>תיאור פריט</th><th>כמות לבחינה</th><th>עבר</th><th>נכשל</th></tr>\n'+
+'<tr><td>'+get('catalogNumber')+'</td><td>'+get('itemDescription')+'</td>'+
 '<td style="text-align:center">'+get('quantityForExam')+'</td>'+
 '<td style="text-align:center">'+get('passed')+'</td>'+
 '<td style="text-align:center">'+get('failed')+'</td></tr>\n'+
@@ -1502,7 +1550,7 @@ function exportZIP(){
 }
 
 // ═══════ SAVE / LOAD ═══════
-function fieldIds(){return['f_referenceNumber','f_examNumber','f_projectName','f_requestingUnit','f_professionalBranch','f_requesterDetails','f_requestDate','f_urgency','f_workOrderNumber','f_examClassification','f_factoryName','f_milCatalogNumber','f_isRepeatExam','f_batchNumber','f_receptionType','f_examDate','f_examinerName','f_inspectorPersonalId','f_catalogNumber','f_itemDescription','f_quantityForExam','f_examMethod','f_serialNumbers','f_samplingPlan','f_sampleSize','f_acceptanceNumber','f_rejectionNumber','f_passed','f_failed','f_examDescription','f_examSummary','f_notes','f_result','f_supervisorName','f_supervisorRole','f_factoryRepName','f_factoryRepRole'];}
+function fieldIds(){return['f_referenceNumber','f_examNumber','f_projectName','f_requestingUnit','f_requesterDetails','f_requestDate','f_urgency','f_workOrderNumber','f_examClassification','f_factoryName','f_milCatalogNumber','f_isRepeatExam','f_batchNumber','f_receptionType','f_examDate','f_examinerName','f_inspectorPersonalId','f_catalogNumber','f_itemDescription','f_quantityForExam','f_examMethod','f_serialNumbers','f_samplingPlan','f_sampleSize','f_acceptanceNumber','f_rejectionNumber','f_passed','f_failed','f_examDescription','f_examSummary','f_notes','f_result','f_exceptionApprover','f_exceptionDetails','f_supervisorName','f_supervisorRole','f_factoryRepName','f_factoryRepRole'];}
 function collectFields(){var o={};fieldIds().forEach(function(id){var el=document.getElementById(id);if(el)o[id]=el.value;});return o;}
 function applyFields(o){Object.keys(o).forEach(function(id){var el=document.getElementById(id);if(el)el.value=o[id]||'';});}
 function save(){
