@@ -353,7 +353,7 @@ select option{background:#1e293b;}
         <div class="form-g"><label>מספר הזמנת עבודה</label><input type="text" id="f_workOrderNumber"></div>
       </div>
       <div class="form-g"><label>סיווג הבחינה</label>
-        <select id="f_examClassification"><option value="">בחר</option><option>בלמ"ס</option><option>שמור</option><option>סודי</option></select>
+        <select id="f_examClassification" onchange="onClassificationChange(this.value)"><option value="">בחר</option><option>בלמ"ס</option><option>שמור</option><option>סודי</option></select>
       </div>
     </div>
     <div class="step-footer"><button class="btn-next" onclick="goStep(1)">הבא ←</button></div>
@@ -396,7 +396,9 @@ select option{background:#1e293b;}
       </div>
       <div class="form-row2">
         <div class="form-g"><label>כמות לבחינה (גודל המנה) <span class="req">*</span></label><input type="number" id="f_quantityForExam" min="0"></div>
-        <div class="form-g"><label>שיטת הבחינה</label><input type="text" id="f_examMethod" placeholder="מיון / מדגם / ATP"></div>
+        <div class="form-g"><label>שיטת הבחינה</label>
+          <select id="f_examMethod"><option value="">בחר</option><option>מדגם</option><option>מיון</option><option>ATP</option></select>
+        </div>
       </div>
       <div class="form-g"><label>מס"ד — מספרי סידורי (שורה לכל מספר)</label>
         <textarea id="f_serialNumbers" rows="4" placeholder="N-23-01-444&#10;N-20-05-062"></textarea>
@@ -486,13 +488,20 @@ select option{background:#1e293b;}
 
   <!-- ── STEP 6: תיעוד — ATP + תמונות ── -->
   <div class="step-panel" id="p6">
-    <!-- ATP (אחזקה בלבד) -->
-    <div class="card" id="atpCard" style="display:none;">
+    <!-- ATP / מסמך בדיקות -->
+    <div class="card" id="atpCard">
       <div class="card-title">
-        📄 ATP — מסמך בדיקות
-        <button class="btn-sm" onclick="openAtp()">פתח / העלה ATP</button>
+        📄 מסמך בדיקות (ATP / שרטוט)
+        <div style="display:flex;gap:7px;">
+          <button class="btn-sm" onclick="document.getElementById('atpFileInput').click()">📄 PDF</button>
+          <button class="btn-sm" onclick="document.getElementById('atpImgInput').click()">🖼️ תמונה</button>
+          <button class="btn-sm" onclick="document.getElementById('atpCamInput').click()">📷 צלם</button>
+        </div>
       </div>
-      <div id="atpStatus" style="color:var(--muted);font-size:.82rem;">לא צורף מסמך ATP</div>
+      <input type="file" id="atpFileInput" accept="application/pdf" style="display:none" onchange="loadAtpFile(this,'pdf')">
+      <input type="file" id="atpImgInput" accept="image/*" multiple style="display:none" onchange="loadAtpFile(this,'img')">
+      <input type="file" id="atpCamInput" accept="image/*" capture="environment" style="display:none" onchange="loadAtpFile(this,'img')">
+      <div id="atpStatus" style="color:var(--muted);font-size:.82rem;">לא צורף מסמך</div>
       <div class="cap-row" id="capturedRow" style="display:none;"></div>
     </div>
 
@@ -614,12 +623,26 @@ select option{background:#1e293b;}
 <div class="modal-sheet" onclick="event.stopPropagation()">
   <div class="modal-hdr"><h3>📄 ATP — מסמך בדיקות</h3><button class="modal-x" onclick="closeMod('atpModal')">✕</button></div>
   <div id="atpUpload">
-    <div onclick="document.getElementById('atpFile').click()"
-      style="border:2px dashed var(--border);border-radius:10px;padding:28px;text-align:center;cursor:pointer;color:var(--muted);">
-      <div style="font-size:2rem;margin-bottom:8px;">📄</div>
-      <div>בחר קובץ ATP (PDF)</div>
+    <div style="display:flex;flex-direction:column;gap:10px;padding:10px 0;">
+      <button onclick="document.getElementById('atpFile').click()"
+        style="border:2px dashed var(--border);border-radius:10px;padding:20px;text-align:center;cursor:pointer;color:var(--muted);background:none;width:100%;font-family:inherit;">
+        <div style="font-size:1.6rem;margin-bottom:4px;">📄</div>
+        <div>העלה PDF</div>
+      </button>
+      <button onclick="document.getElementById('atpImgUpload').click()"
+        style="border:2px dashed var(--border);border-radius:10px;padding:20px;text-align:center;cursor:pointer;color:var(--muted);background:none;width:100%;font-family:inherit;">
+        <div style="font-size:1.6rem;margin-bottom:4px;">🖼️</div>
+        <div>העלה תמונה / מספר תמונות</div>
+      </button>
+      <button onclick="document.getElementById('atpCamUpload').click()"
+        style="border:2px dashed var(--border);border-radius:10px;padding:20px;text-align:center;cursor:pointer;color:var(--muted);background:none;width:100%;font-family:inherit;">
+        <div style="font-size:1.6rem;margin-bottom:4px;">📷</div>
+        <div>צלם עם מצלמה</div>
+      </button>
     </div>
-    <input type="file" id="atpFile" accept="application/pdf" style="display:none" onchange="loadAtpPDF(this)">
+    <input type="file" id="atpFile" accept="application/pdf" style="display:none" onchange="loadAtpFile(this,'pdf')">
+    <input type="file" id="atpImgUpload" accept="image/*" multiple style="display:none" onchange="loadAtpFile(this,'img')">
+    <input type="file" id="atpCamUpload" accept="image/*" capture="environment" style="display:none" onchange="loadAtpFile(this,'img')">
   </div>
   <div id="atpViewer" style="display:none;">
     <div class="atp-page-nav">
@@ -807,7 +830,7 @@ function doLogin(){
   document.getElementById('hdrInsp').textContent=fn+' '+ln;
 
   // ATP visibility
-  document.getElementById('atpCard').style.display=S.examType==='אחזקה'?'block':'none';
+  // atpCard shown for all exam types
 
   buildCriteria();
   showScreen('appScreen');
@@ -925,6 +948,18 @@ function checkSamplingResult(){
   if(warn)warn.style.display=(re>0&&failed>=re)?'block':'none';
 }
 
+function onClassificationChange(val){
+  if(!val)return;
+  if(val==='בלמ"ס'){
+    toast('⚠️ שים לב! יש להקפיד על נהלי אבטחת מידע — לא להכניס תוכן סודי/שמור בבחינה המסווגת כבלמ"ס');
+    setTimeout(function(){
+      alert('⚠️ שים לב!\nיש להקפיד על נהלי אבטחת מידע ולהזין תוכן רלוונטי על פי הסיווג.\n\nיש להקפיד לא להכניס תוכן סודי / שמור במידה והבחינה מסווגת כבלמ"ס.');
+    },100);
+  } else {
+    toast('⚠️ שים לב! בחינה מסווגת — יש להקפיד על נהלי אבטחת מידע');
+  }
+}
+
 function onResultChange(val){
   var ef=document.getElementById('exceptionFields');
   if(ef)ef.style.display=(val==='אושר עם חריגה')?'block':'none';
@@ -960,18 +995,53 @@ function openAtp(){document.getElementById('atpModal').classList.add('active');r
 var PDFJS_CDN='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
 var PDFJS_WORKER_CDN='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-function loadAtpPDF(inp){
-  var file=inp.files[0];if(!file)return;
-  toast('טוען מסמך PDF...');
-  var rd=new FileReader();
-  rd.onload=function(e){
-    window._atpBuf=new Uint8Array(e.target.result);
-    if(window._pdfjsLib){window._atpInit();return;}
-    _loadPdfJs(function(){window._atpInit();});
-  };
-  rd.onerror=function(){toast('שגיאה בקריאת הקובץ');};
-  rd.readAsArrayBuffer(file);inp.value='';
+// Unified ATP file loader — handles PDF and images
+function loadAtpFile(inp, mode){
+  var files=Array.from(inp.files||[]);if(!files.length)return;
+  inp.value='';
+
+  if(mode==='pdf'){
+    var file=files[0];
+    toast('טוען מסמך PDF...');
+    var rd=new FileReader();
+    rd.onload=function(e){
+      window._atpBuf=new Uint8Array(e.target.result);
+      if(window._pdfjsLib){window._atpInit();return;}
+      _loadPdfJs(function(){window._atpInit();});
+    };
+    rd.onerror=function(){toast('שגיאה בקריאת הקובץ');};
+    rd.readAsArrayBuffer(file);
+    return;
+  }
+
+  // mode==='img' — load images directly as ATP pages (no pdf.js needed)
+  toast('טוען תמונות...');
+  var pending=files.length;
+  var imgs=[];
+  files.forEach(function(f,idx){
+    var r=new FileReader();
+    r.onload=function(e){
+      imgs[idx]=e.target.result;
+      if(--pending===0) _initAtpFromImages(imgs);
+    };
+    r.readAsDataURL(f);
+  });
 }
+
+// Initialize ATP viewer from image dataURLs (no PDF rendering needed)
+function _initAtpFromImages(imgArray){
+  ATP.doc=null; // no pdf.js doc
+  ATP.page=1;
+  ATP.total=imgArray.length;
+  ATP.pageImages=imgArray.slice();
+  ATP.drawStates={};
+  document.getElementById('atpUpload').style.display='none';
+  document.getElementById('atpViewer').style.display='block';
+  showAtpPage(1);
+  document.getElementById('atpStatus').textContent='✓ '+imgArray.length+' תמונות נטענו';
+}
+
+function loadAtpPDF(inp){ loadAtpFile(inp,'pdf'); } // backward compat
 
 function _loadPdfJs(cb){
   // שלב 1: נסה ES module מקומי
@@ -1219,7 +1289,10 @@ function updateAtpRow(){
   var row=document.getElementById('capturedRow');if(!row)return;
   row.innerHTML='';S.atpPages.forEach(function(p,i){var d=document.createElement('div');d.className='cap-thumb';d.innerHTML='<img src="'+p.dataUrl+'"><button class="del-cap" onclick="delAtp('+i+')">✕</button>';row.appendChild(d);});
   row.style.display=S.atpPages.length?'flex':'none';
-  document.getElementById('atpStatus').textContent=ATP.doc?'ATP נטען — '+ATP.total+' עמודים, '+S.atpPages.length+' נשמרו':'לא צורף מסמך ATP';
+  var loaded=ATP.total>0;
+  document.getElementById('atpStatus').textContent=loaded?
+    (ATP.doc?'PDF נטען — '+ATP.total+' עמודים':'תמונות נטענו — '+ATP.total+' עמודים')+', '+S.atpPages.length+' נשמרו':
+    'לא צורף מסמך';
 }
 function delAtp(i){S.atpPages.splice(i,1);renderCapList();updateAtpRow();dSave();}
 
@@ -1398,10 +1471,11 @@ function exportPDF(){
 '</tr></table>\n'+
 '<div style="text-align:center;margin:8px 0"><span class="result-box '+(isPass?'pass':result==='נדחה'?'fail':'pend')+'">'+result+'</span></div>\n'+
 (result==='אושר עם חריגה'&&(get('exceptionApprover')||get('exceptionDetails'))?
-'<div style="border:1.5px solid #e6900a;background:#fff8ec;padding:8px 12px;margin:6px 0;border-radius:4px;font-size:9.5pt;">'+
-'<b>⚠️ פרטי החריגה:</b><br>'+
-(get('exceptionApprover')?'<b>מאשר:</b> '+get('exceptionApprover')+'<br>':'')+
-(get('exceptionDetails')?'<b>פירוט:</b> '+get('exceptionDetails'):'')+'</div>\n':'')+'
+  '<div style="border:1.5px solid #e6900a;background:#fff8ec;padding:8px 12px;margin:6px 0;border-radius:4px;font-size:9.5pt;">'+
+  '<b>⚠️ פרטי החריגה:</b><br>'+
+  (get('exceptionApprover')?'<b>מאשר:</b> '+get('exceptionApprover')+'<br>':'')+
+  (get('exceptionDetails')?'<b>פירוט:</b> '+get('exceptionDetails'):'')+'</div>\n'
+  :'')+
 '<div class="section-title">3. נתוני הפריט</div>\n'+
 '<table>\n'+
 '<tr><th>יצרן</th><th>תיאור פריט</th><th>כמות לבחינה</th><th>עבר</th><th>נכשל</th></tr>\n'+
