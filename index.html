@@ -321,7 +321,7 @@ select option{background:#1e293b;}
     <button class="step-btn" id="nb3" onclick="goStep(3)"><span class="si">📊</span>4 דגימה</button>
     <button class="step-btn" id="nb4" onclick="goStep(4)"><span class="si">✅</span>5 קריטריונים</button>
     <button class="step-btn" id="nb5" onclick="goStep(5)"><span class="si">📝</span>6 תיאור</button>
-    <button class="step-btn" id="nb6" onclick="goStep(6)"><span class="si">📎</span>תיעוד</button>
+    <button class="step-btn" id="nb6" onclick="goStep(6)"><span class="si">📷</span>תמונות</button>
     <button class="step-btn" id="nb7" onclick="goStep(7)"><span class="si">✍️</span>אישורים</button>
   </div>
   <div class="autosave" id="autoLbl">שמירה אוטומטית</div>
@@ -427,14 +427,6 @@ select option{background:#1e293b;}
         <div class="form-g"><label>מספר קבלה (ק)</label><input type="number" id="f_acceptanceNumber" min="0"></div>
         <div class="form-g"><label>מספר דחיה (ד)</label><input type="number" id="f_rejectionNumber" min="0"></div>
       </div>
-      <div class="form-row2">
-        <div class="form-g"><label>כמות שעברה בחינה</label><input type="number" id="f_passed" min="0" oninput="checkSamplingResult()"></div>
-        <div class="form-g"><label>כמות שנכשלה בחינה</label><input type="number" id="f_failed" min="0" oninput="checkSamplingResult()"></div>
-      </div>
-      <div id="samplingWarn" style="display:none;margin-top:10px;padding:12px 14px;background:rgba(239,68,68,.12);border:1.5px solid rgba(239,68,68,.5);border-radius:10px;color:#fca5a5;font-size:.88rem;font-weight:700;">
-        ⚠️ שים לב — הבחינה נכשלה!<br>
-        <span style="font-weight:400;font-size:.82rem;">יש לדחות את הבחינה או לאשר בחריגה (בשלב 6)</span>
-      </div>
     </div>
     <div class="step-footer">
       <button class="btn-back" onclick="goStep(2)">← חזור</button>
@@ -447,6 +439,23 @@ select option{background:#1e293b;}
     <div class="card" style="padding-bottom:4px;">
       <div class="sec-strip">✅ 5. קריטריוני הבחינה</div>
       <div id="criteriaContainer"></div>
+    </div>
+    <!-- ATP / מסמך בדיקות — מצורף לקריטריון מערך הבדיקות -->
+    <div class="card" id="atpCard">
+      <div class="card-title">
+        📄 מסמך בדיקות (ATP / שרטוט)
+        <div style="display:flex;gap:7px;">
+          <button class="btn-sm" onclick="document.getElementById('atpFileInput').click()">📄 PDF</button>
+          <button class="btn-sm" onclick="document.getElementById('atpImgInput').click()">🖼️ תמונה</button>
+          <button class="btn-sm" onclick="document.getElementById('atpCamInput').click()">📷 צלם</button>
+        </div>
+      </div>
+      <input type="file" id="atpFileInput" accept="application/pdf" style="display:none" onchange="loadAtpFile(this,'pdf')">
+      <input type="file" id="atpImgInput" accept="image/*" multiple style="display:none" onchange="loadAtpFile(this,'img')">
+      <input type="file" id="atpCamInput" accept="image/*" capture="environment" style="display:none" onchange="loadAtpFile(this,'img')">
+      <div id="atpStatus" style="color:var(--muted);font-size:.82rem;">לא צורף מסמך</div>
+      <button id="atpOpenBtn" onclick="openAtp()" style="display:none;width:100%;margin-top:8px;background:rgba(139,92,246,.15);border:1px solid rgba(139,92,246,.4);color:#c4b5fd;border-radius:8px;padding:9px;font-size:.88rem;cursor:pointer;">✏️ פתח לעריכה / ציור</button>
+      <div class="cap-row" id="capturedRow" style="display:none;"></div>
     </div>
     <div class="step-footer">
       <button class="btn-back" onclick="goStep(3)">← חזור</button>
@@ -463,6 +472,17 @@ select option{background:#1e293b;}
       </div>
       <div class="form-g"><label>סיכום הבחינה</label>
         <textarea id="f_examSummary" rows="4" placeholder="סכם ממצאים והמלצות..."></textarea>
+      </div>
+    </div>
+    <div class="card">
+      <div class="sec-strip">📊 תוצאות ספירה</div>
+      <div class="form-row2">
+        <div class="form-g"><label>כמות שעברה בחינה</label><input type="number" id="f_passed" min="0" oninput="checkSamplingResult()"></div>
+        <div class="form-g"><label>כמות שנכשלה בחינה</label><input type="number" id="f_failed" min="0" oninput="checkSamplingResult()"></div>
+      </div>
+      <div id="samplingWarn" style="display:none;margin-top:10px;padding:12px 14px;background:rgba(239,68,68,.12);border:1.5px solid rgba(239,68,68,.5);border-radius:10px;color:#fca5a5;font-size:.88rem;font-weight:700;">
+        ⚠️ שים לב — הבחינה נכשלה!<br>
+        <span style="font-weight:400;font-size:.82rem;">יש לדחות את הבחינה או לאשר בחריגה</span>
       </div>
     </div>
     <div class="card">
@@ -486,25 +506,8 @@ select option{background:#1e293b;}
     </div>
   </div>
 
-  <!-- ── STEP 6: תיעוד — ATP + תמונות ── -->
+  <!-- ── STEP 6: תיעוד — תמונות ── -->
   <div class="step-panel" id="p6">
-    <!-- ATP / מסמך בדיקות -->
-    <div class="card" id="atpCard">
-      <div class="card-title">
-        📄 מסמך בדיקות (ATP / שרטוט)
-        <div style="display:flex;gap:7px;">
-          <button class="btn-sm" onclick="document.getElementById('atpFileInput').click()">📄 PDF</button>
-          <button class="btn-sm" onclick="document.getElementById('atpImgInput').click()">🖼️ תמונה</button>
-          <button class="btn-sm" onclick="document.getElementById('atpCamInput').click()">📷 צלם</button>
-        </div>
-      </div>
-      <input type="file" id="atpFileInput" accept="application/pdf" style="display:none" onchange="loadAtpFile(this,'pdf')">
-      <input type="file" id="atpImgInput" accept="image/*" multiple style="display:none" onchange="loadAtpFile(this,'img')">
-      <input type="file" id="atpCamInput" accept="image/*" capture="environment" style="display:none" onchange="loadAtpFile(this,'img')">
-      <div id="atpStatus" style="color:var(--muted);font-size:.82rem;">לא צורף מסמך</div>
-      <div class="cap-row" id="capturedRow" style="display:none;"></div>
-    </div>
-
     <!-- Photos -->
     <div class="card">
       <div class="card-title">
@@ -1036,6 +1039,8 @@ function _initAtpFromImages(imgArray){
   ATP.drawStates={};
   document.getElementById('atpUpload').style.display='none';
   document.getElementById('atpViewer').style.display='block';
+  document.getElementById('atpModal').classList.add('active');
+  var ob=document.getElementById('atpOpenBtn');if(ob)ob.style.display='block';
   showAtpPage(1);
   document.getElementById('atpStatus').textContent='✓ '+imgArray.length+' תמונות נטענו';
 }
@@ -1088,6 +1093,8 @@ window._atpInit=function(){
       if(n>doc.numPages){
         document.getElementById('atpUpload').style.display='none';
         document.getElementById('atpViewer').style.display='block';
+        document.getElementById('atpModal').classList.add('active');
+        var ob=document.getElementById('atpOpenBtn');if(ob)ob.style.display='block';
         showAtpPage(1);
         statusEl.textContent='✓ ATP נטען — '+doc.numPages+' עמודים';
         return;
@@ -1295,6 +1302,53 @@ function updateAtpRow(){
 }
 function delAtp(i){S.atpPages.splice(i,1);renderCapList();updateAtpRow();dSave();}
 
+// ═══════ SHARE ATP ═══════
+function shareATP(via){
+  // בנה תמונה מורכבת של העמוד הנוכחי (PDF + ציורים)
+  var pc=document.getElementById('atpPdfC'),dc=document.getElementById('atpDrawC');
+  if(!pc||pc.width===0){toast('אין עמוד לשיתוף');return;}
+  var m=document.createElement('canvas');m.width=pc.width;m.height=pc.height;
+  var ctx=m.getContext('2d');ctx.drawImage(pc,0,0);if(dc&&dc.width>0)ctx.drawImage(dc,0,0);
+
+  var ref=gv('f_referenceNumber')||'atp';
+  var fname='ATP_'+ref.replace(/[^a-zA-Z0-9\-_]/g,'_')+'_p'+ATP.page+'.jpg';
+
+  // ניסיון שיתוף דרך Web Share API (נתמך על אנדרואיד/iOS)
+  m.toBlob(function(blob){
+    if(!blob){toast('שגיאה ביצירת תמונה');return;}
+    var file=new File([blob],fname,{type:'image/jpeg'});
+
+    if(navigator.canShare&&navigator.canShare({files:[file]})){
+      navigator.share({
+        title:'ATP — '+ref,
+        text:'מסמך בחינה עמוד '+ATP.page,
+        files:[file]
+      }).then(function(){toast('שותף בהצלחה ✓');})
+        .catch(function(e){if(e.name!=='AbortError')toast('שיתוף בוטל');});
+      return;
+    }
+
+    // fallback — הורד את התמונה ופתח את האפליקציה
+    var url=URL.createObjectURL(blob);
+    if(via==='whatsapp'){
+      // ב-iOS/Android — פתח WhatsApp. ב-desktop — הורד
+      var a=document.createElement('a');a.href=url;a.download=fname;a.click();
+      setTimeout(function(){
+        window.open('https://wa.me/?text='+encodeURIComponent('מסמך בחינה '+ref+' — עמוד '+ATP.page),'_blank');
+        toast('הקובץ הורד — שלח ידנית בווטסאפ');
+        URL.revokeObjectURL(url);
+      },800);
+    } else {
+      // מייל — mailto עם הסבר
+      var a2=document.createElement('a');a2.href=url;a2.download=fname;a2.click();
+      setTimeout(function(){
+        window.location.href='mailto:?subject='+encodeURIComponent('ATP — '+ref)+'&body='+encodeURIComponent('מצורף מסמך בחינה, עמוד '+ATP.page+'\n\nהקובץ הורד למכשיר — צרפו אותו ידנית למייל.');
+        URL.revokeObjectURL(url);
+      },800);
+    }
+  },'image/jpeg',0.9);
+}
+
 // ═══════ CALC ═══════
 var _calcRes=null;
 function openCalc(){
@@ -1436,10 +1490,30 @@ function exportPDF(){
 '.sig-name{font-size:9.5pt;font-weight:700;margin-top:2px}\n'+
 '.attachment-img{max-width:100%;max-height:120mm;display:block;margin:8px auto;border:1px solid #ccc}\n'+
 '.text-block{border:1px solid #bbb;padding:7px 10px;font-size:9.5pt;line-height:1.5;white-space:pre-wrap}\n'+
-'.no-print{position:fixed;top:16px;left:16px;background:#1a3a5c;color:#fff;border:none;padding:10px 22px;cursor:pointer;border-radius:7px;font-size:11pt;font-family:inherit;z-index:999}\n'+
+'.no-print{position:fixed;top:16px;left:16px;display:flex;gap:8px;z-index:999}\n'+
+'.no-print button{background:#1a3a5c;color:#fff;border:none;padding:10px 18px;cursor:pointer;border-radius:7px;font-size:10.5pt;font-family:inherit;}\n'+
+'.no-print .wa{background:#128c7e;} .no-print .ml{background:#1d4ed8;}\n'+
 '@media print{.no-print{display:none!important}.page{padding:8mm 12mm}body{font-size:9.5pt}tr{page-break-inside:avoid}}\n'+
 '</style>\n</head>\n<body>\n'+
-'<button class="no-print" onclick="window.print()">🖨️ הדפסה / שמור כ-PDF</button>\n'+
+'<div class="no-print">\n'+
+'<button onclick="window.print()">🖨️ הדפסה / שמור כ-PDF</button>\n'+
+'<button class="wa" onclick="shareDoc(\'whatsapp\')">💬 שלח בווטסאפ</button>\n'+
+'<button class="ml" onclick="shareDoc(\'email\')">📧 שלח במייל</button>\n'+
+'</div>\n'+
+'<script>\n'+
+'function shareDoc(via){\n'+
+'  var title=document.title||"מסמך בחינה";\n'+
+'  if(navigator.share){\n'+
+'    navigator.share({title:title,text:"מסמך בחינה — "+title,url:window.location.href}).catch(function(){});\n'+
+'    return;\n'+
+'  }\n'+
+'  if(via==="whatsapp"){\n'+
+'    window.open("https://wa.me/?text="+encodeURIComponent(title),"_blank");\n'+
+'  } else {\n'+
+'    window.location.href="mailto:?subject="+encodeURIComponent(title)+"&body="+encodeURIComponent("מצורף מסמך בחינה.\\n\\nהדפס לPDF ושלח כקובץ.");\n'+
+'  }\n'+
+'}\n'+
+'<\/script>\n'+
 '<div class="page">\n'+
 '<div class="doc-header">\n'+
 '  <img src="logo.png" alt="" onerror="this.style.display=\'none\'">\n'+
