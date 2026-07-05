@@ -578,7 +578,6 @@ select option{background:#1e293b;}
       </button>
       <div class="export-g">
         <button class="btn-pdf" onclick="exportPDF()">📄 הורד PDF</button>
-        <button class="btn-json" onclick="exportJSON()" title="ייצוא JSON ללא תמונות">📤 JSON בלבד</button>
       </div>
       <button class="btn-new" onclick="confirmNew()">🔄 בחינה חדשה</button>
     </div>
@@ -1530,25 +1529,6 @@ attHtml+
   toast('PDF נוצר — הדפס מהחלון שנפתח');
 }
 
-// ═══════ EXPORT JSON ═══════
-function exportJSON(){
-  S.super_.name=gv('f_supervisorName');S.super_.role=gv('f_supervisorRole');S.super_.sig=capSig('sigSuper');
-  S.rep.name=gv('f_factoryRepName');S.rep.role=gv('f_factoryRepRole');S.rep.sig=capSig('sigRep');
-  var wrap={
-    _source:'tablet',_version:'3.0',_exportDate:new Date().toISOString(),
-    _examType:S.examType,
-    _inspectorSig:S.insp.sig||null,
-    _supervisorName:S.super_.name,_supervisorRole:S.super_.role,_supervisorSig:S.super_.sig||null,
-    _factoryRepName:S.rep.name,_factoryRepRole:S.rep.role,_factoryRepSig:S.rep.sig||null,
-    _photos:S.photos,_atpPages:S.atpPages,
-    data:buildData()
-  };
-  var ref=gv('f_referenceNumber')||'exam';
-  var fname='exam_'+ref.replace(/[^a-zA-Z0-9\-_]/g,'_')+'_'+new Date().toISOString().substring(0,10)+'.json';
-  dlBlob(new Blob([JSON.stringify(wrap,null,2)],{type:'application/json'}),fname);
-  toast('JSON יוצא: '+fname);
-}
-
 // ═══════ ZIP EXPORT ═══════
 function dataUrlToU8(dataUrl){
   var b64=dataUrl.split(',')[1];
@@ -1581,7 +1561,7 @@ function exportZIP(){
   S.rep.name=gv('f_factoryRepName');S.rep.role=gv('f_factoryRepRole');S.rep.sig=capSig('sigRep');
 
   _loadJSZip(function(JSZip){
-    if(!JSZip){toast('JSZip לא זמין — מייצא JSON במקום');exportJSON();return;}
+    if(!JSZip){toast('❌ לא ניתן לייצא — JSZip לא נטען. נסה שוב.');return;}
     var zip=new JSZip();
 
     // exam.json — נתונים בלבד, ללא תמונות
@@ -1666,7 +1646,7 @@ function loadSaved(){
 
 // ═══════ NEW EXAM ═══════
 function confirmNew(){
-  var msg='לפתוח בחינה חדשה?\n\nלחץ אישור לניקוי הטופס.\nאם רוצה לשמור — לחץ ביטול, ייצא JSON ואז חדש.';
+  var msg='לפתוח בחינה חדשה?\n\nלחץ אישור לניקוי הטופס.\nאם רוצה לשמור — לחץ ביטול, ייצא ZIP ואז חדש.';
   if(!confirm(msg))return;
   resetAll();
 }
