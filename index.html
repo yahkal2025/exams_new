@@ -248,6 +248,39 @@ select option{background:#1e293b;}
   .export-g{grid-template-columns:1fr;}
   .photo-grid{grid-template-columns:repeat(2,1fr);}
 }
+
+/* ══ LIGHT MODE ══ */
+body.light{
+  --bg:#f0f4f8;--card:rgba(255,255,255,.95);--card2:rgba(255,255,255,.7);
+  --border:rgba(0,0,0,.1);--accent:#6d28d9;--green:#059669;--red:#dc2626;
+  --orange:#d97706;--teal:#0891b2;--text:#1e293b;--muted:#64748b;
+  --input:rgba(0,0,0,.05);
+}
+body.light .app-hdr{background:rgba(255,255,255,.97);border-bottom-color:rgba(109,40,217,.35);}
+body.light .hdr-title{color:#1e293b;}
+body.light .steps-nav{background:#e2e8f0;}
+body.light .modal-sheet{background:#f8fafc;border-color:rgba(109,40,217,.25);}
+body.light .toast{background:#fff;border-color:var(--accent);color:var(--text);
+  box-shadow:0 4px 18px rgba(0,0,0,.12);}
+body.light select option{background:#f8fafc;color:#1e293b;}
+body.light .sig-canvas{background:rgba(0,0,0,.03);border-color:rgba(0,0,0,.15);}
+body.light .login-box{background:rgba(255,255,255,.92);border-color:rgba(109,40,217,.25);
+  box-shadow:0 8px 32px rgba(0,0,0,.12);}
+body.light #loginScreen{
+  background:radial-gradient(ellipse at 10% 20%,rgba(109,40,217,.08) 0%,transparent 50%),
+             radial-gradient(ellipse at 90% 80%,rgba(6,182,212,.06) 0%,transparent 50%),#f0f4f8;}
+body.light .login-title{color:#1e293b;text-shadow:none;}
+body.light .step-footer{background:rgba(240,244,248,.97);}
+body.light .atp-tool{color:var(--muted);border-color:var(--border);}
+body.light .btn-back{background:rgba(0,0,0,.05);border-color:var(--border);}
+body.light .insp-chip{background:#fff;}
+body.light .type-badge{background:rgba(109,40,217,.1);}
+
+/* כפתור toggle */
+.dark-toggle{background:none;border:1.5px solid var(--border);border-radius:20px;
+  padding:4px 10px;font-size:.82rem;cursor:pointer;color:var(--muted);
+  transition:all .2s;white-space:nowrap;}
+.dark-toggle:hover{border-color:var(--accent);color:var(--accent);}
 </style>
 </head>
 <body>
@@ -260,8 +293,13 @@ select option{background:#1e293b;}
     <img src="logo.png" alt="" onerror="this.style.display='none'" style="height:56px;object-fit:contain;">
     <img src="logo2.png" alt="" onerror="this.style.display='none'" style="height:56px;object-fit:contain;">
   </div>
-  <div class="login-title">מערכת ניהול בחינות אחזקה וחימוש מרכש</div>
-  <div class="login-sub">יחידת הקישור והלוגיסטיקה — גף קישור ובחינה</div>
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+    <div>
+      <div class="login-title">מערכת ניהול בחינות אחזקה וחימוש מרכש</div>
+      <div class="login-sub">יחידת הקישור והלוגיסטיקה — גף קישור ובחינה</div>
+    </div>
+    <button class="dark-toggle" id="themeToggleLogin" onclick="toggleTheme()" title="מצב יום/לילה" style="margin-top:2px;">🌙</button>
+  </div>
 
   <div class="sec-lbl">סוג בחינה</div>
   <div class="et-group">
@@ -309,6 +347,7 @@ select option{background:#1e293b;}
     <div class="hdr-right">
       <span class="type-badge" id="typeBadge">—</span>
       <span class="insp-chip" id="hdrInsp">בוחן</span>
+      <button class="dark-toggle" id="themeToggle" onclick="toggleTheme()" title="מצב יום/לילה">🌙</button>
       <button onclick="goBackToLogin()" style="background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.4);color:#c4b5fd;border-radius:8px;padding:4px 10px;font-size:.7rem;font-weight:700;cursor:pointer;white-space:nowrap;">← פרטי בוחן</button>
       <button onclick="confirmNew()" style="background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.4);color:#f87171;border-radius:8px;padding:4px 10px;font-size:.7rem;font-weight:700;cursor:pointer;white-space:nowrap;">🔄 חדש</button>
     </div>
@@ -354,6 +393,10 @@ select option{background:#1e293b;}
       </div>
       <div class="form-g"><label>סיווג הבחינה</label>
         <select id="f_examClassification" onchange="onClassificationChange(this.value)"><option value="">בחר</option><option>בלמ"ס</option><option>שמור</option><option>סודי</option></select>
+        <div id="classificationBlockMsg" style="display:none;margin-top:8px;padding:10px 14px;background:#fee2e2;border:2px solid #dc2626;border-radius:8px;color:#991b1b;font-weight:700;font-size:.9rem;line-height:1.5;">
+          🚫 אין לבחון / להזין נתוני בחינה לציוד ברמת סיווג מעל בלמ"ס.<br>
+          <span style="font-weight:400;font-size:.85rem;">יש לבחור סיווג בלמ"ס או רגיל בלבד.</span>
+        </div>
       </div>
     </div>
     <div class="step-footer"><button class="btn-next" onclick="goStep(1)">הבא ←</button></div>
@@ -576,11 +619,15 @@ select option{background:#1e293b;}
     <!-- Export -->
     <div class="card">
       <div class="sec-strip">🏁 ייצוא</div>
-      <button onclick="exportZIP()" style="width:100%;background:linear-gradient(135deg,#0ea5e9,#0369a1);color:#fff;border:none;border-radius:10px;padding:14px;font-size:1rem;font-weight:700;cursor:pointer;margin-bottom:10px;">
-        📦 ייצא ZIP (נתונים + תמונות + חתימות)
-      </button>
-      <div class="export-g">
-        <button class="btn-pdf" onclick="exportPDF()">📄 הורד PDF</button>
+      <div style="display:flex;gap:10px;margin-bottom:10px;">
+        <button onclick="exportZIP()" style="flex:1;background:linear-gradient(135deg,#0ea5e9,#0369a1);color:#fff;border:none;border-radius:10px;padding:14px;font-size:.95rem;font-weight:700;cursor:pointer;">
+          📦 ייצא ZIP
+        </button>
+        <button class="btn-pdf" onclick="exportPDF()" style="flex:1;margin:0;">📄 הורד PDF</button>
+      </div>
+      <div style="display:flex;gap:10px;margin-bottom:10px;">
+        <button onclick="shareReport('whatsapp')" style="flex:1;background:linear-gradient(135deg,#25d366,#128c7e);color:#fff;border:none;border-radius:10px;padding:12px;font-size:.9rem;font-weight:700;cursor:pointer;">💬 שלח בווטסאפ</button>
+        <button onclick="shareReport('email')" style="flex:1;background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff;border:none;border-radius:10px;padding:12px;font-size:.9rem;font-weight:700;cursor:pointer;">📧 שלח במייל</button>
       </div>
       <button class="btn-new" onclick="confirmNew()">🔄 בחינה חדשה</button>
     </div>
@@ -740,6 +787,31 @@ var FM={
   criterion10:'Criterion10',criterion11:'Criterion11',criterion12:'Criterion12',
   criterion13:'Criterion13'
 };
+
+// ═══════ THEME ═══════
+function toggleTheme(){
+  var isLight=document.body.classList.toggle('light');
+  localStorage.setItem('theme',isLight?'light':'dark');
+  var ico=isLight?'☀️':'🌙';
+  ['themeToggle','themeToggleLogin'].forEach(function(id){
+    var el=document.getElementById(id);if(el)el.textContent=ico;
+  });
+  // עדכן meta theme-color
+  var meta=document.querySelector('meta[name="theme-color"]');
+  if(meta)meta.content=isLight?'#f0f4f8':'#0d1117';
+}
+(function(){
+  if(localStorage.getItem('theme')==='light'){
+    document.body.classList.add('light');
+    window.addEventListener('DOMContentLoaded',function(){
+      ['themeToggle','themeToggleLogin'].forEach(function(id){
+        var el=document.getElementById(id);if(el)el.textContent='☀️';
+      });
+      var meta=document.querySelector('meta[name="theme-color"]');
+      if(meta)meta.content='#f0f4f8';
+    });
+  }
+})();
 
 // ═══════ STATE ═══════
 var S={
@@ -951,14 +1023,19 @@ function checkSamplingResult(){
 }
 
 function onClassificationChange(val){
-  if(!val)return;
-  if(val==='בלמ"ס'){
-    toast('⚠️ שים לב! יש להקפיד על נהלי אבטחת מידע — לא להכניס תוכן סודי/שמור בבחינה המסווגת כבלמ"ס');
+  var msg=document.getElementById('classificationBlockMsg');
+  if(val==='שמור'||val==='סודי'){
+    // חסום — הצג שגיאה ואפס
+    if(msg)msg.style.display='block';
     setTimeout(function(){
-      alert('⚠️ שים לב!\nיש להקפיד על נהלי אבטחת מידע ולהזין תוכן רלוונטי על פי הסיווג.\n\nיש להקפיד לא להכניס תוכן סודי / שמור במידה והבחינה מסווגת כבלמ"ס.');
-    },100);
-  } else {
-    toast('⚠️ שים לב! בחינה מסווגת — יש להקפיד על נהלי אבטחת מידע');
+      var el=document.getElementById('f_examClassification');
+      if(el)el.value='';
+    },50);
+    return;
+  }
+  if(msg)msg.style.display='none';
+  if(val==='בלמ"ס'){
+    toast('⚠️ שים לב! יש להקפיד על נהלי אבטחת מידע — לא להכניס תוכן סודי/שמור');
   }
 }
 
@@ -1302,6 +1379,78 @@ function updateAtpRow(){
 }
 function delAtp(i){S.atpPages.splice(i,1);renderCapList();updateAtpRow();dSave();}
 
+// ═══════ SHARE REPORT ═══════
+function shareReport(via){
+  S.super_.name=gv('f_supervisorName');S.super_.role=gv('f_supervisorRole');S.super_.sig=capSig('sigSuper');
+  S.rep.name=gv('f_factoryRepName');S.rep.role=gv('f_factoryRepRole');S.rep.sig=capSig('sigRep');
+
+  var g=function(id){return gv(id)||'';};
+  var ref        = g('f_referenceNumber');
+  var examDate   = g('f_examDate');
+  var examiner   = g('f_examinerName');
+  var item       = g('f_itemDescription');
+  var qty        = g('f_quantityForExam');
+  var passed     = g('f_passed');
+  var failed     = g('f_failed');
+  var result     = g('f_result');
+  var factory    = g('f_factoryName');
+  var unit       = g('f_requestingUnit');
+  var method     = g('f_examMethod');
+  var classif    = g('f_examClassification');
+  var notes      = g('f_notes');
+  var summary    = g('f_examSummary');
+  var project    = g('f_projectName');
+  var catalog    = g('f_catalogNumber');
+  var serials    = g('f_serialNumbers');
+
+  var lines=[];
+  lines.push('📋 דוח בחינה');
+  lines.push('═══════════════════════');
+  if(ref)      lines.push('סימוכין:        '+ref);
+  if(examDate) lines.push('תאריך:          '+examDate);
+  if(examiner) lines.push('בוחן:           '+examiner);
+  lines.push('───────────────────────');
+  if(unit)     lines.push('גוף דורש:       '+unit);
+  if(project)  lines.push('שם הפרויקט:     '+project);
+  if(factory)  lines.push('ספק / מפעל:     '+factory);
+  lines.push('───────────────────────');
+  if(item)     lines.push('תיאור הפריט:    '+item);
+  if(catalog)  lines.push('מספר קטלוג:     '+catalog);
+  if(serials)  lines.push('מספרי סריה:     '+serials);
+  if(classif)  lines.push('סיווג:          '+classif);
+  if(qty)      lines.push('כמות לבחינה:    '+qty);
+  if(method)   lines.push('שיטת בחינה:     '+method);
+  lines.push('───────────────────────');
+  if(passed||failed){
+    lines.push('עבר בחינה:      '+(passed||'0'));
+    lines.push('נכשל בחינה:     '+(failed||'0'));
+  }
+  if(result)   lines.push('תוצאה סופית:    '+result);
+  if(notes)    lines.push('הערות:          '+notes);
+  if(summary)  lines.push('סיכום:          '+summary);
+  lines.push('═══════════════════════');
+
+  var text=lines.join('\n');
+  var subject='דוח בחינה'+(ref?' — '+ref:'');
+
+  // הורד PDF במקביל
+  try{ exportPDF(); }catch(e){}
+
+  if(via==='whatsapp'){
+    // wa.me מקבל טקסט עד ~4000 תווים
+    var waText=text.length>3800?text.substring(0,3800)+'...\n[לדוח המלא — ראה PDF שהורד]':text;
+    var waUrl='https://wa.me/?text='+encodeURIComponent(waText);
+    var w=window.open(waUrl,'_blank');
+    if(!w) window.location.href=waUrl;
+    toast('📄 PDF נפתח לשמירה — צרפו לווטסאפ');
+  } else {
+    // mailto
+    var bodyText=text+'\n\n[הדוח המלא נפתח בחלון נפרד לשמירה כ-PDF]';
+    window.location.href='mailto:?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(bodyText);
+    toast('📄 PDF נפתח לשמירה — צרפו למייל');
+  }
+}
+
 // ═══════ SHARE ATP ═══════
 function shareATP(via){
   // בנה תמונה מורכבת של העמוד הנוכחי (PDF + ציורים)
@@ -1413,8 +1562,8 @@ function buildData(){
   return d;
 }
 
-// ═══════ PDF — identical to network openPrintWindow ═══════
-function exportPDF(){
+// ═══════ PDF ═══════
+function _buildReportHtml(){
   var data=buildData();
   var ref=data[FM.referenceNumber]||data[FM.examNumber]||'טיוטה';
   var get=function(k){return data[FM[k]]||'';};
@@ -1490,30 +1639,10 @@ function exportPDF(){
 '.sig-name{font-size:9.5pt;font-weight:700;margin-top:2px}\n'+
 '.attachment-img{max-width:100%;max-height:120mm;display:block;margin:8px auto;border:1px solid #ccc}\n'+
 '.text-block{border:1px solid #bbb;padding:7px 10px;font-size:9.5pt;line-height:1.5;white-space:pre-wrap}\n'+
-'.no-print{position:fixed;top:16px;left:16px;display:flex;gap:8px;z-index:999}\n'+
-'.no-print button{background:#1a3a5c;color:#fff;border:none;padding:10px 18px;cursor:pointer;border-radius:7px;font-size:10.5pt;font-family:inherit;}\n'+
-'.no-print .wa{background:#128c7e;} .no-print .ml{background:#1d4ed8;}\n'+
+'.no-print{position:fixed;top:16px;left:16px;background:#1a3a5c;color:#fff;border:none;padding:10px 22px;cursor:pointer;border-radius:7px;font-size:11pt;font-family:inherit;z-index:999}\n'+
 '@media print{.no-print{display:none!important}.page{padding:8mm 12mm}body{font-size:9.5pt}tr{page-break-inside:avoid}}\n'+
 '</style>\n</head>\n<body>\n'+
-'<div class="no-print">\n'+
-'<button onclick="window.print()">🖨️ הדפסה / שמור כ-PDF</button>\n'+
-'<button class="wa" onclick="shareDoc(\'whatsapp\')">💬 שלח בווטסאפ</button>\n'+
-'<button class="ml" onclick="shareDoc(\'email\')">📧 שלח במייל</button>\n'+
-'</div>\n'+
-'<script>\n'+
-'function shareDoc(via){\n'+
-'  var title=document.title||"מסמך בחינה";\n'+
-'  if(navigator.share){\n'+
-'    navigator.share({title:title,text:"מסמך בחינה — "+title,url:window.location.href}).catch(function(){});\n'+
-'    return;\n'+
-'  }\n'+
-'  if(via==="whatsapp"){\n'+
-'    window.open("https://wa.me/?text="+encodeURIComponent(title),"_blank");\n'+
-'  } else {\n'+
-'    window.location.href="mailto:?subject="+encodeURIComponent(title)+"&body="+encodeURIComponent("מצורף מסמך בחינה.\\n\\nהדפס לPDF ושלח כקובץ.");\n'+
-'  }\n'+
-'}\n'+
-'<\/script>\n'+
+'<button class="no-print" onclick="window.print()">🖨️ הדפסה / שמור כ-PDF</button>\n'+
 '<div class="page">\n'+
 '<div class="doc-header">\n'+
 '  <img src="logo.png" alt="" onerror="this.style.display=\'none\'">\n'+
@@ -1597,6 +1726,13 @@ critHtml+
 attHtml+
 '</div></body></html>';
 
+  return html;
+}
+
+function exportPDF(){
+  S.super_.name=gv('f_supervisorName');S.super_.role=gv('f_supervisorRole');S.super_.sig=capSig('sigSuper');
+  S.rep.name=gv('f_factoryRepName');S.rep.role=gv('f_factoryRepRole');S.rep.sig=capSig('sigRep');
+  var html=_buildReportHtml();
   var win=window.open('','_blank');
   if(!win){toast('אפשר חלונות קופצים בדפדפן');return;}
   win.document.write(html);win.document.close();win.focus();
