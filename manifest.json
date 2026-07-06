@@ -2,7 +2,7 @@
   "name": "מערכת בחינות",
   "short_name": "בחינות",
   "description": "אפליקציית ניהול בחינות לטאבלט",
-  "start_url": "./tablet_exam.html",
+  "start_url": "./index.html",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#0d1117",
