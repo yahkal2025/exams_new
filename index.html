@@ -297,7 +297,7 @@ body.light .type-badge{background:rgba(109,40,217,.1);}
   </div>
   <div style="display:flex;justify-content:space-between;align-items:flex-start;">
     <div>
-      <div class="login-title">מערכת ניהול בחינות אחזקה וחימוש מרכש</div>
+      <div class="login-title">מערכת ניהול בחינות אחזקה ורכש</div>
       <div class="login-sub">יחידת הקישור והלוגיסטיקה — גף קישור ובחינה</div>
     </div>
     <button class="dark-toggle" id="themeToggleLogin" onclick="toggleTheme()" title="מצב יום/לילה" style="margin-top:2px;">🌙</button>
@@ -306,7 +306,7 @@ body.light .type-badge{background:rgba(109,40,217,.1);}
   <div class="sec-lbl">סוג בחינה</div>
   <div class="et-group">
     <button class="et-btn" id="btnRakash" onclick="selType('רכש')">
-      <span class="ico">🏭</span><span class="lbl">חימוש מרכש</span><span class="sub">בחינת ציוד חדש</span>
+      <span class="ico">🏭</span><span class="lbl">רכש</span><span class="sub">בחינת ציוד חדש</span>
     </button>
     <button class="et-btn" id="btnAchzaka" onclick="selType('אחזקה')">
       <span class="ico">🔧</span><span class="lbl">אחזקה</span><span class="sub">לאחר אחזקה / תיקון</span>
@@ -318,9 +318,8 @@ body.light .type-badge{background:rgba(109,40,217,.1);}
     <div class="form-g"><label>שם פרטי <span class="req">*</span></label><input type="text" id="l_first" placeholder="שם פרטי"></div>
     <div class="form-g"><label>שם משפחה <span class="req">*</span></label><input type="text" id="l_last" placeholder="שם משפחה"></div>
   </div>
-  <div class="form-row3">
+  <div class="form-row2">
     <div class="form-g"><label>דרגה</label><input type="text" id="l_rank" placeholder="דרגה"></div>
-    <div class="form-g"><label>מספר אישי <span class="req">*</span></label><input type="text" id="l_pid" placeholder='מ"א'></div>
     <div class="form-g"><label>מספר בוחן</label><input type="text" id="l_bid" placeholder='מ"ב'></div>
   </div>
   <div class="form-row2">
@@ -381,7 +380,11 @@ body.light .type-badge{background:rgba(109,40,217,.1);}
         <input type="text" id="f_referenceNumber" readonly style="color:#f59e0b;font-weight:600;" title="קוד זמני לשימוש בשטח — הסימוכין הרשמי נקבע ע״י מערכת הרשת בייבוא הZIP">
       </div>
       <div class="form-row2">
-        <div class="form-g"><label>שם הפרויקט</label><input type="text" id="f_projectName" placeholder="לדוגמה: RAMPAGE"></div>
+        <div class="form-g">
+          <label>שם הפרויקט</label>
+          <input type="text" id="f_projectName" placeholder="לדוגמה: RAMPAGE">
+          <small style="color:#f59e0b;display:block;margin-top:3px;font-size:.76rem;">⚠️ אין לרשום שם פרויקט שסיווגו מעל בלמ"ס</small>
+        </div>
         <div class="form-g"><label>גוף דורש / ענף מקצועי</label><input type="text" id="f_requestingUnit"></div>
       </div>
       <div class="form-row2">
@@ -505,7 +508,7 @@ body.light .type-badge{background:rgba(109,40,217,.1);}
     </div>
     <div class="step-footer">
       <button class="btn-back" onclick="goStep(3)">← חזור</button>
-      <button class="btn-next" onclick="goStep(5)">הבא ←</button>
+      <button class="btn-next" onclick="checkCriteriaAndGo()">הבא ←</button>
     </div>
   </div>
 
@@ -533,7 +536,7 @@ body.light .type-badge{background:rgba(109,40,217,.1);}
     </div>
     <div class="card">
       <div class="sec-strip">📎 7. הערות</div>
-      <div class="form-g"><label>הערות</label><textarea id="f_notes" rows="3"></textarea></div>
+      <div class="form-g"><label>הערות</label><textarea id="f_notes" rows="3" oninput="dSave()"></textarea></div>
       <div class="form-g"><label>תוצאה <span class="req">*</span></label>
         <select id="f_result" onchange="onResultChange(this.value)">
           <option value="">בחר תוצאה</option>
@@ -563,6 +566,9 @@ body.light .type-badge{background:rgba(109,40,217,.1);}
           <button class="btn-sm" onclick="document.getElementById('uplInput').click()">🖼️ העלה</button>
         </div>
       </div>
+      <div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.35);border-radius:7px;padding:8px 12px;margin-bottom:10px;color:#fca5a5;font-size:.8rem;">
+        🔴 <strong>חל איסור מוחלט</strong> לצלם או להעלות תמונות/מסמכים של ציוד בסיווג מעל בלמ"ס
+      </div>
       <div id="photoGrid" class="photo-grid"></div>
       <div id="photoCount" style="font-size:.78rem;color:var(--muted);margin-top:8px;">אין תמונות</div>
       <input type="file" id="camInput" accept="image/*" capture="environment" multiple style="display:none" onchange="addPhotos(this)">
@@ -583,9 +589,6 @@ body.light .type-badge{background:rgba(109,40,217,.1);}
       <div class="form-row2">
         <div class="form-g"><label>שם הבוחן (כולל דרגה)</label>
           <input type="text" id="f_examinerName" readonly style="color:#a78bfa;font-weight:600;">
-        </div>
-        <div class="form-g"><label>מספר אישי</label>
-          <input type="text" id="f_inspectorPersonalId" readonly style="color:#a78bfa;">
         </div>
       </div>
       <div class="sec-strip" style="margin-top:8px;">✍️ חתימת בוחן (נלקחה בכניסה)</div>
@@ -627,10 +630,6 @@ body.light .type-badge{background:rgba(109,40,217,.1);}
           📦 ייצא ZIP
         </button>
         <button class="btn-pdf" onclick="exportPDF()" style="flex:1;margin:0;">📄 הורד PDF</button>
-      </div>
-      <div style="display:flex;gap:10px;margin-bottom:10px;">
-        <button onclick="shareReport('whatsapp')" style="flex:1;background:linear-gradient(135deg,#25d366,#128c7e);color:#fff;border:none;border-radius:10px;padding:12px;font-size:.9rem;font-weight:700;cursor:pointer;">💬 שלח בווטסאפ</button>
-        <button onclick="shareReport('email')" style="flex:1;background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff;border:none;border-radius:10px;padding:12px;font-size:.9rem;font-weight:700;cursor:pointer;">📧 שלח במייל</button>
       </div>
       <button class="btn-new" onclick="confirmNew()">🔄 בחינה חדשה</button>
     </div>
@@ -783,7 +782,7 @@ var FM={
   workOrderNumber:'WorkOrderNumber',milCatalogNumber:'MilCatalogNumber',
   isRepeatExam:'IsRepeatExam',batchNumber:'BatchNumber',receptionType:'ReceptionType',
   samplingPlan:'SamplingPlan',sampleSize:'SampleSize',acceptanceNumber:'AcceptanceNumber',
-  rejectionNumber:'RejectionNumber',inspectorPersonalId:'InspectorPersonalId',
+  rejectionNumber:'RejectionNumber',professionalBranch:'ProfessionalBranch',
   criterion1:'Criterion1',criterion2:'Criterion2',criterion3:'Criterion3',
   criterion4:'Criterion4',criterion5:'Criterion5',criterion6:'Criterion6',
   criterion7:'Criterion7',criterion8:'Criterion8',criterion9:'Criterion9',
@@ -834,7 +833,7 @@ function selType(t){
   document.getElementById('btnAchzaka').className='et-btn'+(t==='אחזקה'?' sel':'');
   var btn=document.getElementById('btnLogin');
   btn.disabled=false;
-  btn.textContent='התחל בחינת '+(t==='אחזקה'?'אחזקה':'חימוש מרכש')+' ←';
+  btn.textContent='התחל בחינת '+(t==='אחזקה'?'אחזקה':'רכש')+' ←';
 }
 
 // ═══════ SIGNATURE CANVASES ═══════
@@ -871,19 +870,18 @@ function drawSigOn(id,dataUrl){
 function doLogin(){
   if(!S.examType){toast('יש לבחור סוג בחינה');return;}
   var fn=gv('l_first').trim(),ln=gv('l_last').trim();
-  var pid=gv('l_pid').trim(),date=gv('l_date'),factory=gv('l_factory').trim();
-  if(!fn||!ln||!pid||!date||!factory){toast('יש למלא שדות חובה');return;}
+  var date=gv('l_date'),factory=gv('l_factory').trim();
+  if(!fn||!ln||!date||!factory){toast('יש למלא שדות חובה');return;}
   // capSig returns null if canvas is empty (e.g. session restore — canvas is blank on fresh load)
   // In that case, keep whatever sig was already in S.insp.sig (restored from localStorage)
   var capturedSig = capSig('sigInsp');
-  S.insp={first:fn,last:ln,rank:gv('l_rank').trim(),pid:pid,bid:gv('l_bid').trim(),
+  S.insp={first:fn,last:ln,rank:gv('l_rank').trim(),pid:'',bid:gv('l_bid').trim(),
     sig: capturedSig || S.insp.sig || null};
   S.factoryName=factory;S.examDate=date;
 
   // Prefill fields from login
   var examinerFull=(S.insp.rank?S.insp.rank+' ':'')+fn+' '+ln;
   document.getElementById('f_examinerName').value=examinerFull;
-  document.getElementById('f_inspectorPersonalId').value=pid;
   var fn2=document.getElementById('f_factoryName');if(fn2&&!fn2.value)fn2.value=factory;
   var fd=document.getElementById('f_examDate');if(fd&&!fd.value)fd.value=date;
   var rd=document.getElementById('f_requestDate');if(rd&&!rd.value)rd.value=date;
@@ -901,7 +899,7 @@ function doLogin(){
   }
 
   // Header
-  document.getElementById('hdrTitle').textContent='✈️ בחינת '+(S.examType==='אחזקה'?'אחזקה':'חימוש מרכש');
+  document.getElementById('hdrTitle').textContent='✈️ בחינת '+(S.examType==='אחזקה'?'אחזקה':'רכש');
   document.getElementById('hdrSub').textContent=factory+' | '+fmtDate(date);
   document.getElementById('typeBadge').textContent=S.examType;
   document.getElementById('hdrInsp').textContent=fn+' '+ln;
@@ -935,7 +933,6 @@ function goBackToLogin(){
     document.getElementById('l_first').value=S.insp.first;
     document.getElementById('l_last').value=S.insp.last;
     document.getElementById('l_rank').value=S.insp.rank||'';
-    document.getElementById('l_pid').value=S.insp.pid;
     document.getElementById('l_bid').value=S.insp.bid||'';
   }
   if(S.factoryName)document.getElementById('l_factory').value=S.factoryName;
@@ -1017,6 +1014,18 @@ function setCrit(i,st,btn){
   dSave();
 }
 function setCritNote(i,v){S.criteria[i].note=v;dSave();}
+
+function checkCriteriaAndGo(){
+  var empty=S.criteria.filter(function(c){return !c.status;});
+  if(empty.length>0){
+    toast('⚠️ יש '+empty.length+' קריטריונים ללא התייחסות — יש לסמן כל סעיף');
+    var idx=S.criteria.indexOf(empty[0]);
+    var row=document.getElementById('cri'+idx);
+    if(row)row.scrollIntoView({behavior:'smooth',block:'center'});
+    return;
+  }
+  goStep(5);
+}
 
 function checkSamplingResult(){
   var failed=parseInt(document.getElementById('f_failed').value)||0;
@@ -1383,77 +1392,6 @@ function updateAtpRow(){
 function delAtp(i){S.atpPages.splice(i,1);renderCapList();updateAtpRow();dSave();}
 
 // ═══════ SHARE REPORT ═══════
-function shareReport(via){
-  S.super_.name=gv('f_supervisorName');S.super_.role=gv('f_supervisorRole');S.super_.sig=capSig('sigSuper');
-  S.rep.name=gv('f_factoryRepName');S.rep.role=gv('f_factoryRepRole');S.rep.sig=capSig('sigRep');
-
-  var g=function(id){return gv(id)||'';};
-  var ref        = g('f_referenceNumber');
-  var examDate   = g('f_examDate');
-  var examiner   = g('f_examinerName');
-  var item       = g('f_itemDescription');
-  var qty        = g('f_quantityForExam');
-  var passed     = g('f_passed');
-  var failed     = g('f_failed');
-  var result     = g('f_result');
-  var factory    = g('f_factoryName');
-  var unit       = g('f_requestingUnit');
-  var method     = g('f_examMethod');
-  var classif    = g('f_examClassification');
-  var notes      = g('f_notes');
-  var summary    = g('f_examSummary');
-  var project    = g('f_projectName');
-  var catalog    = g('f_catalogNumber');
-  var serials    = g('f_serialNumbers');
-
-  var lines=[];
-  lines.push('📋 דוח בחינה');
-  lines.push('═══════════════════════');
-  if(ref)      lines.push('סימוכין:        '+ref);
-  if(examDate) lines.push('תאריך:          '+examDate);
-  if(examiner) lines.push('בוחן:           '+examiner);
-  lines.push('───────────────────────');
-  if(unit)     lines.push('גוף דורש:       '+unit);
-  if(project)  lines.push('שם הפרויקט:     '+project);
-  if(factory)  lines.push('ספק / מפעל:     '+factory);
-  lines.push('───────────────────────');
-  if(item)     lines.push('תיאור הפריט:    '+item);
-  if(catalog)  lines.push('מספר קטלוג:     '+catalog);
-  if(serials)  lines.push('מספרי סריה:     '+serials);
-  if(classif)  lines.push('סיווג:          '+classif);
-  if(qty)      lines.push('כמות לבחינה:    '+qty);
-  if(method)   lines.push('שיטת בחינה:     '+method);
-  lines.push('───────────────────────');
-  if(passed||failed){
-    lines.push('עבר בחינה:      '+(passed||'0'));
-    lines.push('נכשל בחינה:     '+(failed||'0'));
-  }
-  if(result)   lines.push('תוצאה סופית:    '+result);
-  if(notes)    lines.push('הערות:          '+notes);
-  if(summary)  lines.push('סיכום:          '+summary);
-  lines.push('═══════════════════════');
-
-  var text=lines.join('\n');
-  var subject='דוח בחינה'+(ref?' — '+ref:'');
-
-  // הורד PDF במקביל
-  try{ exportPDF(); }catch(e){}
-
-  if(via==='whatsapp'){
-    // wa.me מקבל טקסט עד ~4000 תווים
-    var waText=text.length>3800?text.substring(0,3800)+'...\n[לדוח המלא — ראה PDF שהורד]':text;
-    var waUrl='https://wa.me/?text='+encodeURIComponent(waText);
-    var w=window.open(waUrl,'_blank');
-    if(!w) window.location.href=waUrl;
-    toast('📄 PDF נפתח לשמירה — צרפו לווטסאפ');
-  } else {
-    // mailto
-    var bodyText=text+'\n\n[הדוח המלא נפתח בחלון נפרד לשמירה כ-PDF]';
-    window.location.href='mailto:?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(bodyText);
-    toast('📄 PDF נפתח לשמירה — צרפו למייל');
-  }
-}
-
 // ═══════ SHARE ATP ═══════
 function shareATP(via){
   // בנה תמונה מורכבת של העמוד הנוכחי (PDF + ציורים)
@@ -1556,8 +1494,7 @@ function buildData(){
     milCatalogNumber:'f_milCatalogNumber',isRepeatExam:'f_isRepeatExam',
     batchNumber:'f_batchNumber',receptionType:'f_receptionType',
     samplingPlan:'f_samplingPlan',sampleSize:'f_sampleSize',
-    acceptanceNumber:'f_acceptanceNumber',rejectionNumber:'f_rejectionNumber',
-    inspectorPersonalId:'f_inspectorPersonalId'
+    acceptanceNumber:'f_acceptanceNumber',rejectionNumber:'f_rejectionNumber'
   };
   Object.keys(fields).forEach(function(k){d[FM[k]||k]=gv(fields[k]);});
   // criteria
@@ -1653,7 +1590,7 @@ function _buildReportHtml(){
 '  <img src="logo2.png" alt="" onerror="this.style.display=\'none\'">\n'+
 '</div>\n'+
 '<div class="subject-line">\n'+
-'  <h2>הנדון: בחינת '+(S.examType==='אחזקה'?'אחזקה':'רכש חימוש')+'</h2>\n'+
+'  <h2>הנדון: בחינת '+(S.examType==='אחזקה'?'אחזקה':'רכש')+'</h2>\n'+
 (get('projectName')?'  <div class="proj">פרויקט: '+get('projectName')+'</div>\n':'')+
 '  <div class="ref">סימוכין: '+ref+'</div>\n'+
 '</div>\n'+
@@ -1669,10 +1606,9 @@ function _buildReportHtml(){
 '</table>\n'+
 '<div class="section-title">2. פרטי הבחינה</div>\n'+
 '<table><tr>\n'+
-'  <td style="width:25%"><span class="lbl">שם הבוחן</span><span class="val">'+get('examinerName')+'</span></td>\n'+
-'  <td style="width:25%"><span class="lbl">מספר אישי</span><span class="val">'+get('inspectorPersonalId')+'</span></td>\n'+
-'  <td style="width:25%"><span class="lbl">תאריך הבחינה</span><span class="val">'+fmtD(get('examDate'))+'</span></td>\n'+
-'  <td style="width:25%"><span class="lbl">סימוכין</span><span class="val">'+ref+'</span></td>\n'+
+'  <td style="width:33%"><span class="lbl">שם הבוחן</span><span class="val">'+get('examinerName')+'</span></td>\n'+
+'  <td style="width:33%"><span class="lbl">תאריך הבחינה</span><span class="val">'+fmtD(get('examDate'))+'</span></td>\n'+
+'  <td style="width:33%"><span class="lbl">סימוכין</span><span class="val">'+ref+'</span></td>\n'+
 '</tr></table>\n'+
 '<div style="text-align:center;margin:8px 0"><span class="result-box '+(isPass?'pass':result==='נדחה'?'fail':'pend')+'">'+result+'</span></div>\n'+
 (result==='אושר עם חריגה'&&(get('exceptionApprover')||get('exceptionDetails'))?
@@ -1716,7 +1652,7 @@ critHtml+
 (inspSig?'    <img src="'+inspSig+'" class="sig-img">\n':'')+
 '    <div class="sig-line"></div>\n'+
 '    <div class="sig-name">'+get('examinerName')+'</div>\n'+
-'    <div class="sig-lbl">בוחן'+(get('inspectorPersonalId')?' — מ"א '+get('inspectorPersonalId'):'')+(S.insp.bid?' — מ.ב '+S.insp.bid:'')+'</div>\n'+
+'    <div class="sig-lbl">בוחן'+(S.insp.bid?' — מ.ב '+S.insp.bid:'')+'</div>\n'+
 '  </div>\n'+
 '  <div class="sig-box">\n'+
 (repSig?'    <img src="'+repSig+'" class="sig-img">\n':'')+
@@ -1736,10 +1672,54 @@ function exportPDF(){
   S.super_.name=gv('f_supervisorName');S.super_.role=gv('f_supervisorRole');S.super_.sig=capSig('sigSuper');
   S.rep.name=gv('f_factoryRepName');S.rep.role=gv('f_factoryRepRole');S.rep.sig=capSig('sigRep');
   var html=_buildReportHtml();
-  var win=window.open('','_blank');
-  if(!win){toast('אפשר חלונות קופצים בדפדפן');return;}
-  win.document.write(html);win.document.close();win.focus();
-  toast('PDF נוצר — הדפס מהחלון שנפתח');
+  // שיטת iframe — עובדת ב-PWA ב-file:// ללא popup blocker
+  var iframe=document.createElement('iframe');
+  iframe.style.cssText='position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;border:0;';
+  document.body.appendChild(iframe);
+  try{
+    iframe.contentDocument.open();
+    iframe.contentDocument.write(html);
+    iframe.contentDocument.close();
+    setTimeout(function(){
+      try{
+        iframe.contentWindow.focus();
+        iframe.contentWindow.print();
+      }catch(e){
+        // fallback: blob URL
+        var blob=new Blob([html],{type:'text/html;charset=utf-8'});
+        var url=URL.createObjectURL(blob);
+        var a=document.createElement('a');
+        a.href=url;a.download='exam_report.html';a.click();
+        setTimeout(function(){URL.revokeObjectURL(url);},3000);
+        toast('📄 דוח הורד — פתח לצפייה והדפסה');
+      }
+      setTimeout(function(){document.body.removeChild(iframe);},2000);
+    },400);
+    toast('📄 מכין הדפסה...');
+  }catch(e){
+    document.body.removeChild(iframe);
+    toast('שגיאת PDF: '+e.message);
+  }
+}
+
+// ═══════ ZIP ENCRYPTION ═══════
+// מפתח סימטרי — זהה בטאבלט ובממשק הרשת. לא לשנות.
+var _examCryptoKey=null;
+function _getExamCryptoKey(usage){
+  var k=new Uint8Array([0x4c,0x61,0x68,0x61,0x76,0x45,0x78,0x61,0x6d,0x4b,
+    0x65,0x79,0x2d,0x32,0x30,0x32,0x35,0x2d,0x49,0x41,0x46,0x2d,0x53,0x65,
+    0x63,0x75,0x72,0x65,0x21,0x35,0x37,0x33]);
+  return crypto.subtle.importKey('raw',k,{name:'AES-GCM'},false,[usage]);
+}
+function encryptExamJson(jsonStr){
+  return _getExamCryptoKey('encrypt').then(function(ck){
+    var iv=crypto.getRandomValues(new Uint8Array(12));
+    return crypto.subtle.encrypt({name:'AES-GCM',iv:iv},ck,new TextEncoder().encode(jsonStr)).then(function(ct){
+      var out=new Uint8Array(12+ct.byteLength);
+      out.set(iv,0);out.set(new Uint8Array(ct),12);
+      return out;
+    });
+  });
 }
 
 // ═══════ ZIP EXPORT ═══════
@@ -1787,8 +1767,6 @@ function exportZIP(){
       _hasSigs:{inspector:!!S.insp.sig,supervisor:!!S.super_.sig,rep:!!S.rep.sig},
       data:buildData()
     };
-    zip.file('exam.json',JSON.stringify(meta,null,2));
-
     // חתימות
     if(S.insp.sig)   zip.file('signatures/sig_inspector.png',  dataUrlToU8(S.insp.sig));
     if(S.super_.sig) zip.file('signatures/sig_supervisor.png', dataUrlToU8(S.super_.sig));
@@ -1805,19 +1783,35 @@ function exportZIP(){
       try{zip.file('atp/atp_page_'+(p.page||(i+1))+'.jpg',dataUrlToU8(p.dataUrl));}catch(e){}
     });
 
-    toast('יוצר ZIP...');
-    zip.generateAsync({type:'blob',compression:'DEFLATE',compressionOptions:{level:6}})
-    .then(function(blob){
-      var ref=gv('f_referenceNumber')||'exam';
-      var fname='exam_'+ref.replace(/[^a-zA-Z0-9\-_]/g,'_')+'_'+new Date().toISOString().substring(0,10)+'.zip';
-      dlBlob(blob,fname);
-      toast('📦 ZIP יוצא: '+fname+' ('+S.photos.length+' תמונות, '+(S.insp.sig?'חתימות':'')+')');
-    }).catch(function(e){toast('שגיאת ZIP: '+e.message);});
+    var metaJson=JSON.stringify(meta,null,2);
+    var ref=gv('f_referenceNumber')||'exam';
+    var fname='exam_'+ref.replace(/[^a-zA-Z0-9\-_]/g,'_')+'_'+new Date().toISOString().substring(0,10)+'.zip';
+
+    function _generateAndDownload(){
+      toast('יוצר ZIP...');
+      zip.generateAsync({type:'blob',compression:'DEFLATE',compressionOptions:{level:6}})
+      .then(function(blob){
+        dlBlob(blob,fname);
+        toast('📦 ZIP יוצא: '+fname+' ('+S.photos.length+' תמונות, '+(S.insp.sig?'חתימות':'')+')');
+      }).catch(function(e){toast('שגיאת ZIP: '+e.message);});
+    }
+
+    // הצפנת exam.json → exam.enc
+    toast('מצפין נתונים...');
+    encryptExamJson(metaJson).then(function(encData){
+      zip.file('exam.enc',encData);
+      _generateAndDownload();
+    }).catch(function(e){
+      // fallback: שמור ללא הצפנה אם Web Crypto לא זמין
+      console.warn('ZIP encryption unavailable, saving plain JSON:',e);
+      zip.file('exam.json',metaJson);
+      _generateAndDownload();
+    });
   });
 }
 
 // ═══════ SAVE / LOAD ═══════
-function fieldIds(){return['f_referenceNumber','f_examNumber','f_projectName','f_requestingUnit','f_requesterDetails','f_requestDate','f_urgency','f_workOrderNumber','f_examClassification','f_factoryName','f_milCatalogNumber','f_isRepeatExam','f_batchNumber','f_receptionType','f_examDate','f_examinerName','f_inspectorPersonalId','f_catalogNumber','f_itemDescription','f_quantityForExam','f_examMethod','f_serialNumbers','f_samplingPlan','f_sampleSize','f_acceptanceNumber','f_rejectionNumber','f_passed','f_failed','f_examDescription','f_examSummary','f_notes','f_result','f_exceptionApprover','f_exceptionDetails','f_supervisorName','f_supervisorRole','f_factoryRepName','f_factoryRepRole'];}
+function fieldIds(){return['f_referenceNumber','f_examNumber','f_projectName','f_requestingUnit','f_requesterDetails','f_requestDate','f_urgency','f_workOrderNumber','f_examClassification','f_factoryName','f_milCatalogNumber','f_isRepeatExam','f_batchNumber','f_receptionType','f_examDate','f_examinerName','f_catalogNumber','f_itemDescription','f_quantityForExam','f_examMethod','f_serialNumbers','f_samplingPlan','f_sampleSize','f_acceptanceNumber','f_rejectionNumber','f_passed','f_failed','f_examDescription','f_examSummary','f_notes','f_result','f_exceptionApprover','f_exceptionDetails','f_supervisorName','f_supervisorRole','f_factoryRepName','f_factoryRepRole'];}
 function collectFields(){var o={};fieldIds().forEach(function(id){var el=document.getElementById(id);if(el)o[id]=el.value;});return o;}
 function applyFields(o){Object.keys(o).forEach(function(id){var el=document.getElementById(id);if(el)el.value=o[id]||'';});}
 function save(){
@@ -1875,7 +1869,7 @@ function resetAll(){
   fieldIds().forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
 
   // נקה שדות כניסה
-  ['l_first','l_last','l_rank','l_pid','l_bid','l_factory'].forEach(function(id){
+  ['l_first','l_last','l_rank','l_bid','l_factory'].forEach(function(id){
     var el=document.getElementById(id);if(el)el.value='';
   });
   document.getElementById('l_date').value=new Date().toISOString().substring(0,10);
