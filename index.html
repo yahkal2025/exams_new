@@ -1718,26 +1718,6 @@ function exportPDF(){
   };
 }
 
-// ═══════ EXAM FILE ENCRYPTION ═══════
-// מצפין את כל קובץ הבחינה (לא רק ה-JSON). זהה בטאבלט ובממשק הרשת.
-function _getExamCryptoKey(usage){
-  var k=new Uint8Array([0x4c,0x61,0x68,0x61,0x76,0x45,0x78,0x61,0x6d,0x4b,
-    0x65,0x79,0x2d,0x32,0x30,0x32,0x35,0x2d,0x49,0x41,0x46,0x2d,0x53,0x65,
-    0x63,0x75,0x72,0x65,0x21,0x35,0x37,0x33]);
-  return crypto.subtle.importKey('raw',k,{name:'AES-GCM'},false,[usage]);
-}
-// מצפין Uint8Array שלם → Uint8Array (IV 12B + ciphertext)
-function encryptBuffer(data){
-  return _getExamCryptoKey('encrypt').then(function(ck){
-    var iv=crypto.getRandomValues(new Uint8Array(12));
-    return crypto.subtle.encrypt({name:'AES-GCM',iv:iv},ck,data).then(function(ct){
-      var out=new Uint8Array(12+ct.byteLength);
-      out.set(iv,0);out.set(new Uint8Array(ct),12);
-      return out;
-    });
-  });
-}
-
 // ═══════ ZIP EXPORT ═══════
 function dataUrlToU8(dataUrl){
   var b64=dataUrl.split(',')[1];
@@ -1800,21 +1780,15 @@ function exportZIP(){
     });
 
     var ref=gv('f_referenceNumber')||'exam';
-    var fname='exam_'+ref.replace(/[^a-zA-Z0-9\-_]/g,'_')+'_'+new Date().toISOString().substring(0,10)+'.exam';
+    var fname='exam_'+ref.replace(/[^a-zA-Z0-9\-_]/g,'_')+'_'+new Date().toISOString().substring(0,10)+'.zip';
 
-    // שים את exam.json בתוך ה-ZIP
     zip.file('exam.json',JSON.stringify(meta,null,2));
 
     toast('מכין קובץ בחינה...');
-    // 1. יצר ZIP כ-arraybuffer
-    zip.generateAsync({type:'arraybuffer',compression:'DEFLATE',compressionOptions:{level:6}})
-    .then(function(zipBuf){
-      // 2. הצפן את כל ה-ZIP
-      return encryptBuffer(new Uint8Array(zipBuf));
-    }).then(function(encData){
-      // 3. שמור כ-.exam — לא ניתן לפתיחה כ-ZIP רגיל
-      dlBlob(new Blob([encData],{type:'application/octet-stream'}),fname);
-      toast('🔒 קובץ בחינה יוצא: '+fname);
+    zip.generateAsync({type:'blob',compression:'DEFLATE',compressionOptions:{level:6}})
+    .then(function(blob){
+      dlBlob(blob,fname);
+      toast('📦 קובץ בחינה יוצא: '+fname);
     }).catch(function(e){
       toast('שגיאת ייצוא: '+e.message);
       console.error(e);
