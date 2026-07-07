@@ -499,6 +499,9 @@ body.light .type-badge{background:rgba(109,40,217,.1);}
           <button class="btn-sm" onclick="document.getElementById('atpCamInput').click()">📷 צלם</button>
         </div>
       </div>
+      <div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.35);border-radius:7px;padding:8px 12px;margin-bottom:10px;color:#fca5a5;font-size:.8rem;">
+        🔴 <strong>חל איסור מוחלט</strong> להעלות מסמכי ATP או לצלם ציוד בסיווג מעל בלמ"ס
+      </div>
       <input type="file" id="atpFileInput" accept="application/pdf" style="display:none" onchange="loadAtpFile(this,'pdf')">
       <input type="file" id="atpImgInput" accept="image/*" multiple style="display:none" onchange="loadAtpFile(this,'img')">
       <input type="file" id="atpCamInput" accept="image/*" capture="environment" style="display:none" onchange="loadAtpFile(this,'img')">
@@ -1702,19 +1705,19 @@ function exportPDF(){
   }
 }
 
-// ═══════ ZIP ENCRYPTION ═══════
-// מפתח סימטרי — זהה בטאבלט ובממשק הרשת. לא לשנות.
-var _examCryptoKey=null;
+// ═══════ EXAM FILE ENCRYPTION ═══════
+// מצפין את כל קובץ הבחינה (לא רק ה-JSON). זהה בטאבלט ובממשק הרשת.
 function _getExamCryptoKey(usage){
   var k=new Uint8Array([0x4c,0x61,0x68,0x61,0x76,0x45,0x78,0x61,0x6d,0x4b,
     0x65,0x79,0x2d,0x32,0x30,0x32,0x35,0x2d,0x49,0x41,0x46,0x2d,0x53,0x65,
     0x63,0x75,0x72,0x65,0x21,0x35,0x37,0x33]);
   return crypto.subtle.importKey('raw',k,{name:'AES-GCM'},false,[usage]);
 }
-function encryptExamJson(jsonStr){
+// מצפין Uint8Array שלם → Uint8Array (IV 12B + ciphertext)
+function encryptBuffer(data){
   return _getExamCryptoKey('encrypt').then(function(ck){
     var iv=crypto.getRandomValues(new Uint8Array(12));
-    return crypto.subtle.encrypt({name:'AES-GCM',iv:iv},ck,new TextEncoder().encode(jsonStr)).then(function(ct){
+    return crypto.subtle.encrypt({name:'AES-GCM',iv:iv},ck,data).then(function(ct){
       var out=new Uint8Array(12+ct.byteLength);
       out.set(iv,0);out.set(new Uint8Array(ct),12);
       return out;
@@ -1783,29 +1786,25 @@ function exportZIP(){
       try{zip.file('atp/atp_page_'+(p.page||(i+1))+'.jpg',dataUrlToU8(p.dataUrl));}catch(e){}
     });
 
-    var metaJson=JSON.stringify(meta,null,2);
     var ref=gv('f_referenceNumber')||'exam';
-    var fname='exam_'+ref.replace(/[^a-zA-Z0-9\-_]/g,'_')+'_'+new Date().toISOString().substring(0,10)+'.zip';
+    var fname='exam_'+ref.replace(/[^a-zA-Z0-9\-_]/g,'_')+'_'+new Date().toISOString().substring(0,10)+'.exam';
 
-    function _generateAndDownload(){
-      toast('יוצר ZIP...');
-      zip.generateAsync({type:'blob',compression:'DEFLATE',compressionOptions:{level:6}})
-      .then(function(blob){
-        dlBlob(blob,fname);
-        toast('📦 ZIP יוצא: '+fname+' ('+S.photos.length+' תמונות, '+(S.insp.sig?'חתימות':'')+')');
-      }).catch(function(e){toast('שגיאת ZIP: '+e.message);});
-    }
+    // שים את exam.json בתוך ה-ZIP
+    zip.file('exam.json',JSON.stringify(meta,null,2));
 
-    // הצפנת exam.json → exam.enc
-    toast('מצפין נתונים...');
-    encryptExamJson(metaJson).then(function(encData){
-      zip.file('exam.enc',encData);
-      _generateAndDownload();
+    toast('מכין קובץ בחינה...');
+    // 1. יצר ZIP כ-arraybuffer
+    zip.generateAsync({type:'arraybuffer',compression:'DEFLATE',compressionOptions:{level:6}})
+    .then(function(zipBuf){
+      // 2. הצפן את כל ה-ZIP
+      return encryptBuffer(new Uint8Array(zipBuf));
+    }).then(function(encData){
+      // 3. שמור כ-.exam — לא ניתן לפתיחה כ-ZIP רגיל
+      dlBlob(new Blob([encData],{type:'application/octet-stream'}),fname);
+      toast('🔒 קובץ בחינה יוצא: '+fname);
     }).catch(function(e){
-      // fallback: שמור ללא הצפנה אם Web Crypto לא זמין
-      console.warn('ZIP encryption unavailable, saving plain JSON:',e);
-      zip.file('exam.json',metaJson);
-      _generateAndDownload();
+      toast('שגיאת ייצוא: '+e.message);
+      console.error(e);
     });
   });
 }
