@@ -1502,6 +1502,23 @@ function buildData(){
 }
 
 // ═══════ PDF ═══════
+// ממיר img שטעון בדף ל-data URL (base64) כדי שיעבוד ב-srcdoc iframe ללא base URL
+function _imgToDataUrl(src){
+  var imgs=document.querySelectorAll('img');
+  for(var i=0;i<imgs.length;i++){
+    var s=imgs[i].getAttribute('src')||'';
+    if(s.indexOf(src)>=0&&imgs[i].complete&&imgs[i].naturalWidth>0){
+      try{
+        var c=document.createElement('canvas');
+        c.width=imgs[i].naturalWidth;c.height=imgs[i].naturalHeight;
+        c.getContext('2d').drawImage(imgs[i],0,0);
+        return c.toDataURL('image/png');
+      }catch(e){}
+    }
+  }
+  return src; // fallback
+}
+
 function _buildReportHtml(){
   var data=buildData();
   var ref=data[FM.referenceNumber]||data[FM.examNumber]||'טיוטה';
@@ -1510,6 +1527,8 @@ function _buildReportHtml(){
   var result=get('result');
   var isPass=result==='עבר';
   var baseUrl='../ממשק בחינות ברשת/';
+  var logo1=_imgToDataUrl('logo.png');
+  var logo2=_imgToDataUrl('logo2.png');
 
   // capture signatures
   S.super_.name=gv('f_supervisorName');S.super_.role=gv('f_supervisorRole');S.super_.sig=capSig('sigSuper');
@@ -1584,9 +1603,9 @@ function _buildReportHtml(){
 '<button class="no-print" onclick="window.print()">🖨️ הדפסה / שמור כ-PDF</button>\n'+
 '<div class="page">\n'+
 '<div class="doc-header">\n'+
-'  <img src="logo.png" alt="" onerror="this.style.display=\'none\'">\n'+
+(logo1?'  <img src="'+logo1+'" alt="" style="height:52px;object-fit:contain;">\n':'')+
 '  <div class="doc-header-center"><div class="class-stamp">'+(get('examClassification')||'בלמ"ס')+'</div></div>\n'+
-'  <img src="logo2.png" alt="" onerror="this.style.display=\'none\'">\n'+
+(logo2?'  <img src="'+logo2+'" alt="" style="height:52px;object-fit:contain;">\n':'')+
 '</div>\n'+
 '<div class="subject-line">\n'+
 '  <h2>הנדון: בחינת '+(S.examType==='אחזקה'?'אחזקה':'רכש')+'</h2>\n'+
