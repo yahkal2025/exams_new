@@ -295,13 +295,11 @@ body.light .type-badge{background:rgba(109,40,217,.1);}
     <img src="logo.png" alt="" onerror="this.style.display='none'" style="height:56px;object-fit:contain;">
     <img src="logo2.png" alt="" onerror="this.style.display='none'" style="height:56px;object-fit:contain;">
   </div>
-  <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-    <div>
-      <div class="login-title">מערכת ניהול בחינות אחזקה ורכש</div>
-      <div class="login-sub">יחידת הקישור והלוגיסטיקה — גף קישור ובחינה</div>
-    </div>
-    <button class="dark-toggle" id="themeToggleLogin" onclick="toggleTheme()" title="מצב יום/לילה" style="margin-top:2px;">🌙</button>
+  <div style="display:flex;justify-content:flex-end;margin-bottom:4px;">
+    <button class="dark-toggle" id="themeToggleLogin" onclick="toggleTheme()" title="מצב יום/לילה">🌙</button>
   </div>
+  <div class="login-title">מערכת ניהול בחינות אחזקה ורכש</div>
+  <div class="login-sub">יחידת הקישור והלוגיסטיקה — גף קישור ובחינה</div>
 
   <div class="sec-lbl">סוג בחינה</div>
   <div class="et-group">
@@ -322,10 +320,7 @@ body.light .type-badge{background:rgba(109,40,217,.1);}
     <div class="form-g"><label>דרגה</label><input type="text" id="l_rank" placeholder="דרגה"></div>
     <div class="form-g"><label>מספר בוחן</label><input type="text" id="l_bid" placeholder='מ"ב'></div>
   </div>
-  <div class="form-row2">
-    <div class="form-g"><label>שם הספק / מפעל <span class="req">*</span></label><input type="text" id="l_factory" placeholder="שם המפעל"></div>
-    <div class="form-g"><label>תאריך הבחינה <span class="req">*</span></label><input type="date" id="l_date"></div>
-  </div>
+  <div class="form-g"><label>תאריך הבחינה <span class="req">*</span></label><input type="date" id="l_date"></div>
 
   <div class="sec-lbl" style="margin-top:14px;">חתימת הבוחן</div>
   <div class="sig-wrap">
@@ -333,7 +328,10 @@ body.light .type-badge{background:rgba(109,40,217,.1);}
     <canvas id="sigInsp" class="sig-canvas" width="800" height="150"></canvas>
   </div>
 
-  <button class="btn-login" id="btnLogin" onclick="doLogin()" disabled>בחר סוג בחינה ←</button>
+  <div style="display:flex;gap:10px;margin-top:18px;">
+    <button class="btn-login" id="btnLogin" onclick="doLogin()" disabled style="flex:1;margin-top:0;">בחר סוג בחינה ←</button>
+    <button onclick="resetAll()" title="נקה את כל שדות הטופס" style="background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.4);color:#f87171;border-radius:12px;padding:0 18px;font-size:.9rem;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;">🔄 איפוס</button>
+  </div>
 </div>
 </div>
 </div>
@@ -873,19 +871,18 @@ function drawSigOn(id,dataUrl){
 function doLogin(){
   if(!S.examType){toast('יש לבחור סוג בחינה');return;}
   var fn=gv('l_first').trim(),ln=gv('l_last').trim();
-  var date=gv('l_date'),factory=gv('l_factory').trim();
-  if(!fn||!ln||!date||!factory){toast('יש למלא שדות חובה');return;}
+  var date=gv('l_date');
+  if(!fn||!ln||!date){toast('יש למלא שדות חובה');return;}
   // capSig returns null if canvas is empty (e.g. session restore — canvas is blank on fresh load)
   // In that case, keep whatever sig was already in S.insp.sig (restored from localStorage)
   var capturedSig = capSig('sigInsp');
   S.insp={first:fn,last:ln,rank:gv('l_rank').trim(),pid:'',bid:gv('l_bid').trim(),
     sig: capturedSig || S.insp.sig || null};
-  S.factoryName=factory;S.examDate=date;
+  S.examDate=date;
 
   // Prefill fields from login
   var examinerFull=(S.insp.rank?S.insp.rank+' ':'')+fn+' '+ln;
   document.getElementById('f_examinerName').value=examinerFull;
-  var fn2=document.getElementById('f_factoryName');if(fn2&&!fn2.value)fn2.value=factory;
   var fd=document.getElementById('f_examDate');if(fd&&!fd.value)fd.value=date;
   var rd=document.getElementById('f_requestDate');if(rd&&!rd.value)rd.value=date;
   // Auto-fill reception type from exam type selection
@@ -903,7 +900,7 @@ function doLogin(){
 
   // Header
   document.getElementById('hdrTitle').textContent='✈️ בחינת '+(S.examType==='אחזקה'?'אחזקה':'רכש');
-  document.getElementById('hdrSub').textContent=factory+' | '+fmtDate(date);
+  document.getElementById('hdrSub').textContent=fmtDate(date);
   document.getElementById('typeBadge').textContent=S.examType;
   document.getElementById('hdrInsp').textContent=fn+' '+ln;
 
@@ -938,7 +935,6 @@ function goBackToLogin(){
     document.getElementById('l_rank').value=S.insp.rank||'';
     document.getElementById('l_bid').value=S.insp.bid||'';
   }
-  if(S.factoryName)document.getElementById('l_factory').value=S.factoryName;
   if(S.examDate)document.getElementById('l_date').value=S.examDate;
   showScreen('loginScreen');
 }
@@ -1583,7 +1579,7 @@ function _buildReportHtml(){
 '.attachment-img{max-width:100%;max-height:120mm;display:block;margin:8px auto;border:1px solid #ccc}\n'+
 '.text-block{border:1px solid #bbb;padding:7px 10px;font-size:9.5pt;line-height:1.5;white-space:pre-wrap}\n'+
 '.no-print{position:fixed;top:16px;left:16px;background:#1a3a5c;color:#fff;border:none;padding:10px 22px;cursor:pointer;border-radius:7px;font-size:11pt;font-family:inherit;z-index:999}\n'+
-'@media print{.no-print{display:none!important}.page{padding:8mm 12mm}body{font-size:9.5pt}tr{page-break-inside:avoid}}\n'+
+'@media print{.no-print{display:none!important}.page{padding:8mm 12mm}body{font-size:9.5pt}tr{page-break-inside:avoid}*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important}}\n'+
 '</style>\n</head>\n<body>\n'+
 '<button class="no-print" onclick="window.print()">🖨️ הדפסה / שמור כ-PDF</button>\n'+
 '<div class="page">\n'+
@@ -1855,7 +1851,7 @@ function resetAll(){
   fieldIds().forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
 
   // נקה שדות כניסה
-  ['l_first','l_last','l_rank','l_bid','l_factory'].forEach(function(id){
+  ['l_first','l_last','l_rank','l_bid'].forEach(function(id){
     var el=document.getElementById(id);if(el)el.value='';
   });
   document.getElementById('l_date').value=new Date().toISOString().substring(0,10);
@@ -1903,9 +1899,7 @@ document.addEventListener('DOMContentLoaded',function(){
     document.getElementById('l_first').value=S.insp.first;
     document.getElementById('l_last').value=S.insp.last;
     document.getElementById('l_rank').value=S.insp.rank||'';
-    document.getElementById('l_pid').value=S.insp.pid;
     document.getElementById('l_bid').value=S.insp.bid||'';
-    document.getElementById('l_factory').value=S.factoryName||'';
     document.getElementById('l_date').value=S.examDate||'';
     doLogin();
     buildCriteria();renderPhotos();updateAtpRow();
