@@ -1493,7 +1493,8 @@ function buildData(){
     milCatalogNumber:'f_milCatalogNumber',isRepeatExam:'f_isRepeatExam',
     batchNumber:'f_batchNumber',receptionType:'f_receptionType',
     samplingPlan:'f_samplingPlan',sampleSize:'f_sampleSize',
-    acceptanceNumber:'f_acceptanceNumber',rejectionNumber:'f_rejectionNumber'
+    acceptanceNumber:'f_acceptanceNumber',rejectionNumber:'f_rejectionNumber',
+    exceptionApprover:'f_exceptionApprover',exceptionDetails:'f_exceptionDetails'
   };
   Object.keys(fields).forEach(function(k){d[FM[k]||k]=gv(fields[k]);});
   // criteria
@@ -1644,10 +1645,11 @@ function _buildReportHtml(){
 '<td style="text-align:center">'+get('failed')+'</td></tr>\n'+
 '</table>\n'+
 '<table style="margin-top:2px"><tr>\n'+
-'  <td style="width:25%"><span class="lbl">תכנית דגימה</span><span class="val">'+get('samplingPlan')+'</span></td>\n'+
-'  <td style="width:25%"><span class="lbl">גודל מדגם</span><span class="val">'+get('sampleSize')+'</span></td>\n'+
-'  <td style="width:25%"><span class="lbl">מספר קבלה (Ac)</span><span class="val">'+get('acceptanceNumber')+'</span></td>\n'+
-'  <td style="width:25%"><span class="lbl">מספר דחייה (Re)</span><span class="val">'+get('rejectionNumber')+'</span></td>\n'+
+'  <td style="width:20%"><span class="lbl">שיטת הבחינה</span><span class="val">'+get('examMethod')+'</span></td>\n'+
+'  <td style="width:20%"><span class="lbl">תכנית דגימה</span><span class="val">'+get('samplingPlan')+'</span></td>\n'+
+'  <td style="width:20%"><span class="lbl">גודל מדגם</span><span class="val">'+get('sampleSize')+'</span></td>\n'+
+'  <td style="width:20%"><span class="lbl">מספר קבלה (Ac)</span><span class="val">'+get('acceptanceNumber')+'</span></td>\n'+
+'  <td style="width:20%"><span class="lbl">מספר דחייה (Re)</span><span class="val">'+get('rejectionNumber')+'</span></td>\n'+
 '</tr></table>\n'+
 (get('serialNumbers')?'<div style="margin-top:4px;font-size:8.5pt;color:#555">פירוט: '+(get('serialNumbers')||'').split('\n').join(' | ')+'</div>\n':'')+
 '<div class="section-title">4. קריטריוני הבחינה</div>\n'+
