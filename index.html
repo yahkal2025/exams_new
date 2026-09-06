@@ -584,6 +584,10 @@ body.light .type-badge{background:rgba(109,40,217,.1);}
 
   <!-- ── STEP 6: תיעוד — תמונות ── -->
   <div class="step-panel" id="p6">
+    <div class="step-footer" style="margin-bottom:12px;">
+      <button class="btn-back" onclick="goStep(5)">← חזור</button>
+      <button class="btn-next" onclick="goStep(7)">הבא ←</button>
+    </div>
     <!-- Photos -->
     <div class="card">
       <div class="card-title">
@@ -723,11 +727,16 @@ body.light .type-badge{background:rgba(109,40,217,.1);}
     <input type="file" id="atpCamUpload" accept="image/*" capture="environment" style="display:none" onchange="loadAtpFile(this,'img')">
   </div>
   <div id="atpViewer" style="display:none;">
+    <button onclick="captureAtpPage()"
+      style="width:100%;background:linear-gradient(135deg,var(--green),#059669);color:#fff;border:none;border-radius:9px;padding:11px;font-size:.9rem;font-weight:700;cursor:pointer;margin-bottom:8px;">
+      ✅ שמור עמוד זה (עם ציורים)
+    </button>
     <div class="atp-page-nav">
       <button class="atp-nav-btn" onclick="atpPage(-1)">‹ הקודם</button>
       <span id="atpPageLbl" style="font-size:.8rem;color:var(--muted);">עמוד 1 / 1</span>
       <button class="atp-nav-btn" onclick="atpPage(1)">הבא ›</button>
       <button class="atp-nav-btn" onclick="clrAtpDraw()" style="margin-right:auto;color:var(--red);border-color:rgba(239,68,68,.4);">נקה ציור</button>
+      <button class="atp-nav-btn" onclick="document.getElementById('atpImgUpload').click()" style="color:#a78bfa;border-color:rgba(139,92,246,.4);">＋ הוסף</button>
     </div>
     <div class="atp-draw-bar">
       <button class="atp-tool active" id="tool_pen"   onclick="setAtpTool('pen')">✏️ עט</button>
@@ -1084,6 +1093,10 @@ function setCrit(i,st,btn){
       noteEl.style.borderColor='var(--orange)';
       noteEl.style.background='rgba(245,158,11,.06)';
       setTimeout(function(){noteEl.focus();},80);
+    }else if(st==='תקין'){
+      noteEl.placeholder='הערות (ידרש בהעברה לרשת)';
+      noteEl.style.borderColor='';
+      noteEl.style.background='';
     }else{
       noteEl.placeholder='הערות...';
       noteEl.style.borderColor='';
@@ -1200,29 +1213,38 @@ function loadAtpFile(inp, mode){
 
 // Initialize ATP viewer from image dataURLs (no PDF rendering needed)
 function _initAtpFromImages(imgArray){
-  ATP.doc=null; // no pdf.js doc
-  ATP.page=1;
-  ATP.total=imgArray.length;
-  ATP.pageImages=imgArray.slice();
-  ATP.drawStates={};
+  var isAppend = ATP.pageImages && ATP.pageImages.length > 0;
+  ATP.doc = null;
 
-  // ── שמור את כל התמונות ישירות ל-S.atpPages (ללא צורך בלחיצת "שמור עמוד") ──
-  imgArray.forEach(function(dataUrl, idx){
-    // בדוק אם התמונה כבר קיימת (ייבוא חוזר) — אם לא, הוסף
-    var pageNum = idx + 1;
-    var alreadySaved = S.atpPages.some(function(p){ return p.page === pageNum && p.dataUrl === dataUrl; });
-    if(!alreadySaved) S.atpPages.push({dataUrl: dataUrl, page: pageNum});
-  });
+  if(isAppend){
+    // הוסף לתמונות הקיימות
+    var offset = ATP.pageImages.length;
+    ATP.pageImages = ATP.pageImages.concat(imgArray);
+    ATP.total = ATP.pageImages.length;
+    imgArray.forEach(function(dataUrl, idx){
+      var pageNum = offset + idx + 1;
+      S.atpPages.push({dataUrl: dataUrl, page: pageNum});
+    });
+    toast('✓ '+imgArray.length+' תמונות נוספות נשמרו');
+  } else {
+    ATP.page = 1;
+    ATP.total = imgArray.length;
+    ATP.pageImages = imgArray.slice();
+    ATP.drawStates = {};
+    imgArray.forEach(function(dataUrl, idx){
+      S.atpPages.push({dataUrl: dataUrl, page: idx + 1});
+    });
+    document.getElementById('atpUpload').style.display='none';
+    document.getElementById('atpViewer').style.display='block';
+    document.getElementById('atpModal').classList.add('active');
+    var ob=document.getElementById('atpOpenBtn');if(ob)ob.style.display='block';
+    showAtpPage(1);
+    toast('✓ '+imgArray.length+' תמונות נשמרו כנספחים');
+  }
+
   updateAtpRow();
   dSave();
-
-  document.getElementById('atpUpload').style.display='none';
-  document.getElementById('atpViewer').style.display='block';
-  document.getElementById('atpModal').classList.add('active');
-  var ob=document.getElementById('atpOpenBtn');if(ob)ob.style.display='block';
-  showAtpPage(1);
-  document.getElementById('atpStatus').textContent='✓ '+imgArray.length+' תמונות נטענו ונשמרו';
-  toast('✓ '+imgArray.length+' תמונות נשמרו כנספחים');
+  document.getElementById('atpStatus').textContent='✓ '+ATP.total+' תמונות נטענו ונשמרו';
 }
 
 function loadAtpPDF(inp){ loadAtpFile(inp,'pdf'); } // backward compat
@@ -1482,7 +1504,9 @@ function captureAtpPage(){
   var existing=S.atpPages.findIndex(function(p){return p.page===ATP.page;});
   if(existing>=0) S.atpPages[existing]={dataUrl:dataUrl,page:ATP.page};
   else S.atpPages.push({dataUrl:dataUrl,page:ATP.page});
-  renderCapList();updateAtpRow();dSave();toast('עמוד '+ATP.page+' נשמר ✓');
+  renderCapList();updateAtpRow();dSave();
+  toast('עמוד '+ATP.page+' נשמר ✓');
+  closeMod('atpModal');
 }
 function renderCapList(){
   var el=document.getElementById('modalCapRow');if(!el)return;
