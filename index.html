@@ -737,7 +737,8 @@ body.light .type-badge{background:rgba(109,40,217,.1);}
       <span id="atpPageLbl" style="font-size:.8rem;color:var(--muted);">עמוד 1 / 1</span>
       <button class="atp-nav-btn" onclick="atpPage(1)">הבא ›</button>
       <button class="atp-nav-btn" onclick="clrAtpDraw()" style="margin-right:auto;color:var(--red);border-color:rgba(239,68,68,.4);">נקה ציור</button>
-      <button class="atp-nav-btn" onclick="document.getElementById('atpImgUpload').click()" style="color:#a78bfa;border-color:rgba(139,92,246,.4);">＋ הוסף</button>
+      <button class="atp-nav-btn" onclick="document.getElementById('atpImgUpload').click()" style="color:#a78bfa;border-color:rgba(139,92,246,.4);">＋ תמונה</button>
+      <button class="atp-nav-btn" onclick="document.getElementById('atpFile').click()" style="color:#f59e0b;border-color:rgba(245,158,11,.4);">📄 PDF</button>
     </div>
     <div class="atp-draw-bar">
       <button class="atp-tool active" id="tool_pen"   onclick="setAtpTool('pen')">✏️ עט</button>
@@ -1214,7 +1215,8 @@ function loadAtpFile(inp, mode){
 
 // Initialize ATP viewer from image dataURLs (no PDF rendering needed)
 function _initAtpFromImages(imgArray){
-  var isAppend = ATP.pageImages && ATP.pageImages.length > 0;
+  // isAppend רק כשכבר בתצוגת תמונות (לא PDF); אם היינו ב-PDF נתחיל מחדש
+  var isAppend = !ATP.doc && ATP.pageImages && ATP.pageImages.length > 0 && ATP.pageImages[0] !== null;
   ATP.doc = null;
 
   if(isAppend){
@@ -1285,63 +1287,29 @@ var _atpTextPos={x:0,y:0}; // position for text stamp
 
 window._atpInit=function(){
   var lib=window._pdfjsLib;
+  // שמור עותק של ה-PDF לפני getDocument (PDF.js עשוי להעביר בעלות על ה-buffer)
+  window._atpPdfForZip = window._atpBuf ? window._atpBuf.slice() : null;
   lib.getDocument({data:window._atpBuf}).promise.then(function(doc){
     ATP.doc=doc;ATP.page=1;ATP.total=doc.numPages;
-    ATP.pageImages=[];ATP.drawStates={};
+    // lazy — אין pre-render מלא; כל דף ירונדר רק כשמסתכלים עליו
+    ATP.pageImages=new Array(doc.numPages).fill(null);
+    ATP.drawStates={};
     var statusEl=document.getElementById('atpStatus');
-    statusEl.textContent='ממיר עמודים לתמונות... 0/'+doc.numPages;
-
-    // Pre-render every page to a high-res image
-    function renderPageToImage(n){
-      if(n>doc.numPages){
-        document.getElementById('atpUpload').style.display='none';
-        document.getElementById('atpViewer').style.display='block';
-        document.getElementById('atpModal').classList.add('active');
-        var ob=document.getElementById('atpOpenBtn');if(ob)ob.style.display='block';
-        showAtpPage(1);
-        statusEl.textContent='✓ ATP נטען — '+doc.numPages+' עמודים';
-        // שמור את כל דפי ה-PDF אוטומטית ל-S.atpPages (ברור עמודים קיימים מ-PDF זה תחילה)
-        S.atpPages = S.atpPages.filter(function(p){ return p.fromPdf !== true; });
-        ATP.pageImages.forEach(function(dataUrl,idx){
-          if(dataUrl) S.atpPages.push({dataUrl:dataUrl, page:idx+1, fromPdf:true});
-        });
-        updateAtpRow(); dSave();
-        return;
-      }
-      doc.getPage(n).then(function(page){
-        var vp=page.getViewport({scale:1});
-        // מגביל ל-1024px רוחב — מונע קריסת canvas על טאבלט
-        var sc=Math.min(1024/vp.width, 2);
-        var viewport=page.getViewport({scale:sc});
-        var tc=document.createElement('canvas');
-        tc.width=Math.round(viewport.width);
-        tc.height=Math.round(viewport.height);
-        var ctx=tc.getContext('2d'); // ללא אופציות — חיוני ל-PDF.js
-        if(!ctx){
-          // canvas נכשל (מגבלת זיכרון) — נסה scale קטן
-          sc=Math.min(768/vp.width,1.2);
-          viewport=page.getViewport({scale:sc});
-          tc.width=Math.round(viewport.width);tc.height=Math.round(viewport.height);
-          ctx=tc.getContext('2d');
-          if(!ctx){ATP.pageImages.push(null);renderPageToImage(n+1);return;}
-        }
-        ctx.fillStyle='#ffffff';ctx.fillRect(0,0,tc.width,tc.height);
-        page.render({canvasContext:ctx,viewport:viewport}).promise.then(function(){
-          ATP.pageImages.push(tc.toDataURL('image/jpeg',0.88));
-          statusEl.textContent='ממיר... '+n+'/'+doc.numPages;
-          renderPageToImage(n+1);
-        }).catch(function(e){console.warn('render page',n,e);ATP.pageImages.push(null);renderPageToImage(n+1);});
-      }).catch(function(e){console.warn('getPage',n,e);ATP.pageImages.push(null);renderPageToImage(n+1);});
-    }
-    renderPageToImage(1);
+    // פתח את ה-Viewer מיד
+    document.getElementById('atpUpload').style.display='none';
+    document.getElementById('atpViewer').style.display='block';
+    document.getElementById('atpModal').classList.add('active');
+    var ob=document.getElementById('atpOpenBtn');if(ob)ob.style.display='block';
+    statusEl.textContent='✓ PDF נטען — '+doc.numPages+' עמודים (מוכן לייצוא ✓)';
+    showAtpPage(1);   // יפעיל lazy render לדף 1
+    updateAtpRow();dSave();
   }).catch(function(e){toast('שגיאה: '+e.message);});
 };
 
 // Display a pre-rendered page image + restore/fresh draw canvas
+// מציג דף ATP — תומך ב-lazy rendering (דף ירונדר רק בפעם הראשונה שמסתכלים עליו)
 function showAtpPage(n){
-  if(!ATP.pageImages||!ATP.pageImages[n-1])return;
-
-  // Save current draw state before switching
+  // שמור מצב ציור לפני המעבר
   if(ATP.page!==n){
     var oldDc=document.getElementById('atpDrawC');
     if(oldDc&&oldDc.width>0&&oldDc.height>0){
@@ -1350,6 +1318,35 @@ function showAtpPage(n){
   }
   ATP.page=n;
 
+  var existingImg=ATP.pageImages&&ATP.pageImages[n-1];
+  if(existingImg){
+    _displayAtpPage(n,existingImg);
+  } else if(ATP.doc){
+    // Lazy render: רנדר רק את הדף הנוכחי
+    var statusEl=document.getElementById('atpStatus');
+    statusEl.textContent='ממיר עמוד '+n+'/'+ATP.total+'...';
+    ATP.doc.getPage(n).then(function(page){
+      var vp=page.getViewport({scale:1});
+      var sc=Math.min(900/vp.width,1.8);
+      var viewport=page.getViewport({scale:sc});
+      var tc=document.createElement('canvas');
+      tc.width=Math.round(viewport.width);tc.height=Math.round(viewport.height);
+      var ctx=tc.getContext('2d');
+      if(!ctx){statusEl.textContent='שגיאה בהצגת עמוד — נסה שוב';return;}
+      ctx.fillStyle='#ffffff';ctx.fillRect(0,0,tc.width,tc.height);
+      page.render({canvasContext:ctx,viewport:viewport}).promise.then(function(){
+        var dataUrl=tc.toDataURL('image/jpeg',0.88);
+        if(!ATP.pageImages) ATP.pageImages=[];
+        ATP.pageImages[n-1]=dataUrl;
+        statusEl.textContent='✓ PDF נטען — '+ATP.total+' עמודים (מוכן לייצוא ✓)';
+        _displayAtpPage(n,dataUrl);
+      }).catch(function(e){statusEl.textContent='שגיאת תצוגה: '+e.message;});
+    }).catch(function(e){statusEl.textContent='שגיאה: '+e.message;});
+  }
+}
+
+// פונקציית עזר — מציג תמונה ב-canvas של ה-ATP viewer
+function _displayAtpPage(n,imgSrc){
   var pc=document.getElementById('atpPdfC');
   var img=new Image();
   img.onload=function(){
@@ -1358,12 +1355,10 @@ function showAtpPage(n){
     var pctx=pc.getContext('2d');
     pctx.fillStyle='#fff';pctx.fillRect(0,0,pc.width,pc.height);
     pctx.drawImage(img,0,0);
-
     var dc=document.getElementById('atpDrawC');
     dc.width=pc.width;dc.height=pc.height;
     dc.style.width='100%';dc.style.height='auto';
     dc.style.opacity='1';
-
     var savedDraw=ATP.drawStates[n];
     if(savedDraw){
       var di=new Image();
@@ -1375,7 +1370,7 @@ function showAtpPage(n){
     }
     document.getElementById('atpPageLbl').textContent='עמוד '+n+' / '+ATP.total;
   };
-  img.src=ATP.pageImages[n-1];
+  img.src=imgSrc;
 }
 
 function setupAtpDraw(c){
@@ -1526,16 +1521,44 @@ function captureAtpPage(){
 }
 function renderCapList(){
   var el=document.getElementById('modalCapRow');if(!el)return;
-  el.innerHTML='';S.atpPages.forEach(function(p,i){var d=document.createElement('div');d.className='cap-thumb';d.innerHTML='<img src="'+p.dataUrl+'"><button class="del-cap" onclick="delAtp('+i+')">✕</button>';el.appendChild(d);});
+  el.innerHTML='';
+  S.atpPages.forEach(function(p,i){
+    if(!p.dataUrl)return;
+    var d=document.createElement('div');d.className='cap-thumb';
+    d.innerHTML='<img src="'+p.dataUrl+'"><button class="del-cap" onclick="delAtp('+i+')">✕</button>';
+    el.appendChild(d);
+  });
 }
 function updateAtpRow(){
   var row=document.getElementById('capturedRow');if(!row)return;
-  row.innerHTML='';S.atpPages.forEach(function(p,i){var d=document.createElement('div');d.className='cap-thumb';d.innerHTML='<img src="'+p.dataUrl+'"><button class="del-cap" onclick="delAtp('+i+')">✕</button>';row.appendChild(d);});
-  row.style.display=S.atpPages.length?'flex':'none';
+  row.innerHTML='';
+  S.atpPages.forEach(function(p,i){
+    if(!p.dataUrl)return;
+    var d=document.createElement('div');d.className='cap-thumb';
+    d.innerHTML='<img src="'+p.dataUrl+'"><button class="del-cap" onclick="delAtp('+i+')">✕</button>';
+    row.appendChild(d);
+  });
+  var hasImages=S.atpPages.some(function(p){return !!p.dataUrl;});
+  var hasPdf=!!window._atpPdfForZip;
+  row.style.display=(hasImages||hasPdf)?'flex':'none';
+  if(hasPdf&&!hasImages){
+    // PDF בלבד — הוסף אייקון PDF
+    var d=document.createElement('div');d.className='cap-thumb';
+    d.innerHTML='<div style="width:60px;height:72px;background:rgba(239,68,68,.15);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:1.6rem;">📄</div>';
+    row.appendChild(d);
+  }
   var loaded=ATP.total>0;
-  document.getElementById('atpStatus').textContent=loaded?
-    (ATP.doc?'PDF נטען — '+ATP.total+' עמודים':'תמונות נטענו — '+ATP.total+' עמודים')+', '+S.atpPages.length+' נשמרו':
-    'לא צורף מסמך';
+  var pdfReady=hasPdf;
+  if(loaded){
+    var txt=ATP.doc?'PDF נטען — '+ATP.total+' עמודים':'תמונות נטענו — '+ATP.total+' עמודים';
+    if(pdfReady) txt+=' ✓ מוכן לייצוא';
+    else if(S.atpPages.length) txt+=', '+S.atpPages.length+' נשמרו';
+    document.getElementById('atpStatus').textContent=txt;
+  }else if(hasPdf){
+    document.getElementById('atpStatus').textContent='✓ PDF מוכן לייצוא';
+  }else{
+    document.getElementById('atpStatus').textContent='לא צורף מסמך';
+  }
 }
 function delAtp(i){S.atpPages.splice(i,1);renderCapList();updateAtpRow();dSave();}
 
@@ -1938,7 +1961,7 @@ function exportZIP(){
       _exportDate:new Date().toISOString(),
       _supervisorName:S.super_.name,_supervisorRole:S.super_.role,
       _factoryRepName:S.rep.name,_factoryRepRole:S.rep.role,
-      _photoCount:S.photos.length,_atpCount:S.atpPages.length,
+      _photoCount:S.photos.length,_atpCount:S.atpPages.filter(function(p){return!!p.dataUrl;}).length+(window._atpPdfForZip?1:0),
       _hasSigs:{inspector:!!S.insp.sig,supervisor:!!S.super_.sig,rep:!!S.rep.sig},
       data:buildData()
     };
@@ -1953,10 +1976,15 @@ function exportZIP(){
       try{zip.file('photos/'+name,dataUrlToU8(p.dataUrl));}catch(e){}
     });
 
-    // עמודי ATP
+    // עמודי ATP (תמונות שצולמו/נשמרו ידנית)
     S.atpPages.forEach(function(p,i){
+      if(!p.dataUrl)return;
       try{zip.file('atp/atp_page_'+(p.page||(i+1))+'.jpg',dataUrlToU8(p.dataUrl));}catch(e){}
     });
+    // PDF גולמי — מצורף ישירות ל-ZIP ללא רנדור
+    if(window._atpPdfForZip){
+      try{zip.file('atp/atp_document.pdf', window._atpPdfForZip);}catch(e){console.warn('PDF zip error:',e);}
+    }
 
     var ref=gv('f_referenceNumber')||'exam';
     var fname='exam_'+ref.replace(/[^a-zA-Z0-9\-_]/g,'_')+'_'+new Date().toISOString().substring(0,10)+'.zip';
