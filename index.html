@@ -156,7 +156,7 @@ select option{background:#1e293b;}
   cursor:pointer;font-family:inherit;text-align:center;transition:all .2s;}
 .tog-btn.ok2{background:rgba(16,185,129,.2);border-color:var(--green);color:#34d399;}
 .tog-btn.fail2{background:rgba(239,68,68,.2);border-color:var(--red);color:#f87171;}
-.tog-btn.na2{background:rgba(100,116,139,.2);border-color:#475569;color:var(--muted);}
+.tog-btn.na2{background:rgba(245,158,11,.22);border-color:#d97706;color:#f59e0b;font-weight:700;}
 .cr-note{width:100%;background:var(--input);border:1px solid var(--border);
   border-radius:6px;color:var(--text);padding:6px 9px;font-size:.78rem;
   font-family:inherit;direction:rtl;resize:none;height:44px;}
@@ -691,11 +691,12 @@ body.light .type-badge{background:rgba(109,40,217,.1);}
   </div>
   <button class="btn-calc" onclick="runCalc()">חשב</button>
   <div class="calc-res" id="calcRes" style="display:none;margin-top:10px;">
-    <div class="calc-row"><span>אות קוד</span><span class="calc-val" id="cr_code">—</span></div>
-    <div class="calc-row"><span>גודל מדגם</span><span class="calc-val" id="cr_size">—</span></div>
+    <div class="calc-row"><span>אות קוד לגודל המדגם</span><span class="calc-val" id="cr_code">—</span></div>
+    <div class="calc-row"><span>גודל המדגם</span><span class="calc-val" id="cr_size">—</span></div>
     <div class="calc-row"><span>מספר קבלה (Ac)</span><span class="calc-val" id="cr_ac">—</span></div>
     <div class="calc-row"><span>מספר דחיה (Re)</span><span class="calc-val" id="cr_re">—</span></div>
   </div>
+  <div id="calcInterpret" style="display:none;margin-top:10px;background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.25);border-radius:10px;padding:12px 14px;font-size:.83rem;line-height:1.7;color:var(--text);"></div>
   <button class="btn-apply" id="btnApply" style="display:none;" onclick="applyCalc()">← החל על הטופס</button>
 </div>
 </div>
@@ -833,7 +834,7 @@ function isoCalc(lot,level,aql){
   }
   var r=calculatePlan(lot,aql,level);
   if(!r||!r.ok)return null;
-  return{code:r.codeLetter,size:r.sampleSize,ac:r.ac,re:r.re};
+  return{code:r.codeLetter,originalCode:r.originalCodeLetter,arrow:r.arrowFollowed,size:r.sampleSize,ac:r.ac,re:r.re,fullInspection:r.fullInspection};
 }
 
 // ═══════ CRITERIA ═══════
@@ -1303,19 +1304,30 @@ window._atpInit=function(){
       }
       doc.getPage(n).then(function(page){
         var vp=page.getViewport({scale:1});
-        var sc=1600/vp.width; // fixed 1600px wide for consistent quality
+        // מגביל ל-1024px רוחב — מונע קריסת canvas על טאבלט
+        var maxW=1024;
+        var sc=Math.min(maxW/vp.width, 2);
         var viewport=page.getViewport({scale:sc});
         var tc=document.createElement('canvas');
         tc.width=Math.round(viewport.width);
         tc.height=Math.round(viewport.height);
-        var ctx=tc.getContext('2d');
+        var ctx=tc.getContext('2d',{alpha:false,willReadFrequently:false});
+        if(!ctx){
+          // canvas נכשל (מגבלת זיכרון טאבלט) — נסה scale קטן יותר
+          var sc2=Math.min(800/vp.width,1.5);
+          var vp2=page.getViewport({scale:sc2});
+          tc.width=Math.round(vp2.width);tc.height=Math.round(vp2.height);
+          ctx=tc.getContext('2d');
+          if(!ctx){ATP.pageImages.push(null);renderPageToImage(n+1);return;}
+          viewport=vp2;
+        }
         ctx.fillStyle='#fff';ctx.fillRect(0,0,tc.width,tc.height);
         page.render({canvasContext:ctx,viewport:viewport}).promise.then(function(){
-          ATP.pageImages.push(tc.toDataURL('image/jpeg',0.92));
+          ATP.pageImages.push(tc.toDataURL('image/jpeg',0.88));
           statusEl.textContent='ממיר... '+n+'/'+doc.numPages;
           renderPageToImage(n+1);
-        }).catch(function(){ATP.pageImages.push(null);renderPageToImage(n+1);});
-      }).catch(function(){ATP.pageImages.push(null);renderPageToImage(n+1);});
+        }).catch(function(e){console.warn('render page',n,e);ATP.pageImages.push(null);renderPageToImage(n+1);});
+      }).catch(function(e){console.warn('getPage',n,e);ATP.pageImages.push(null);renderPageToImage(n+1);});
     }
     renderPageToImage(1);
   }).catch(function(e){toast('שגיאה: '+e.message);});
@@ -1586,12 +1598,25 @@ function runCalc(){
   var res=isoCalc(lot,lv,aql);
   if(!res){toast('אין תוצאה לנתונים אלו');return;}
   _calcRes=res;
-  document.getElementById('cr_code').textContent=res.code;
+  // הצג אות קוד עם חץ אם בוצע
+  var codeDisplay=res.code;
+  if(res.originalCode&&res.originalCode!==res.code)
+    codeDisplay=res.originalCode+' ← '+res.code;
+  document.getElementById('cr_code').textContent=codeDisplay;
   document.getElementById('cr_size').textContent=res.size;
   document.getElementById('cr_ac').textContent=res.ac;
   document.getElementById('cr_re').textContent=res.re;
   document.getElementById('calcRes').style.display='block';
   document.getElementById('btnApply').style.display='block';
+  // בנה פירוש
+  var arrowTxt='';
+  if(res.arrow==='down') arrowTxt=' בעמודת AQL '+aql+' מופיע חץ כלפי מטה. לפי הוראות הטבלה עוברים לתוכנית הראשונה שמתחת לחץ (אות '+res.code+' עם מדגם '+res.size+'). ';
+  else if(res.arrow==='up') arrowTxt=' בעמודת AQL '+aql+' מופיע חץ כלפי מעלה. לפי הוראות הטבלה עוברים לתוכנית הראשונה שמעל החץ (אות '+res.code+' עם מדגם '+res.size+'). ';
+  var inspTxt=res.fullInspection?'יש לבדוק את כל המנה ('+lot+' יחידות) — גודל המדגם גדול מהמנה.':'יש לבדוק מדגם אקראי של <strong>'+res.size+'</strong> יחידות.';
+  var verdictTxt='אם נמצאו <strong>'+res.ac+'</strong> פריטים לא תואמים או פחות — המנה מתקבלת. אם נמצאו <strong>'+res.re+'</strong> או יותר — המנה נדחית.';
+  var txt='<strong>פירוש התוצאות:</strong><br>לפי ת"י 2859 חלק 1, מנה בגודל '+lot+' ברמת בחינה '+lv+' מקבלת את הקוד '+(res.originalCode||res.code)+'.'+arrowTxt+inspTxt+'<br>'+verdictTxt;
+  var interp=document.getElementById('calcInterpret');
+  interp.innerHTML=txt;interp.style.display='block';
 }
 function applyCalc(){
   if(!_calcRes)return;
