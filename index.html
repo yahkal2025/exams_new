@@ -375,7 +375,7 @@ body.light .type-badge{background:rgba(109,40,217,.1);}
     <button class="step-btn" id="nb7" onclick="goStep(7)"><span class="si">✍️</span>אישורים</button>
   </div>
   <div class="autosave" id="autoLbl">שמירה אוטומטית</div>
-  <div class="copyright-bar">פותח ע"י רס"ן מירי נחום &nbsp;|&nbsp; V3.1 &nbsp;|&nbsp; 24.09.2026 &nbsp;|&nbsp; © כל הזכויות שמורות</div>
+  <div class="copyright-bar">פותח ע"י רס"ן מירי נחום &nbsp;|&nbsp; V3.3 &nbsp;|&nbsp; 24.09.2026 &nbsp;|&nbsp; © כל הזכויות שמורות</div>
 
   <div class="main-wrap"><div class="main-content">
 
@@ -727,10 +727,16 @@ body.light .type-badge{background:rgba(109,40,217,.1);}
     <input type="file" id="atpCamUpload" accept="image/*" capture="environment" style="display:none" onchange="loadAtpFile(this,'img')">
   </div>
   <div id="atpViewer" style="display:none;">
-    <button onclick="captureAtpPage()"
-      style="width:100%;background:linear-gradient(135deg,var(--green),#059669);color:#fff;border:none;border-radius:9px;padding:11px;font-size:.9rem;font-weight:700;cursor:pointer;margin-bottom:8px;">
-      ✅ שמור עמוד זה (עם ציורים)
-    </button>
+    <div style="display:flex;gap:8px;margin-bottom:8px;">
+      <button onclick="captureAtpPage()"
+        style="flex:1;background:linear-gradient(135deg,var(--green),#059669);color:#fff;border:none;border-radius:9px;padding:11px;font-size:.85rem;font-weight:700;cursor:pointer;">
+        ✅ שמור עמוד זה
+      </button>
+      <button onclick="saveAllAtpPages()"
+        style="flex:1;background:linear-gradient(135deg,#6366f1,#4338ca);color:#fff;border:none;border-radius:9px;padding:11px;font-size:.85rem;font-weight:700;cursor:pointer;">
+        💾 שמור הכל
+      </button>
+    </div>
     <div class="atp-page-nav">
       <button class="atp-nav-btn" onclick="atpPage(-1)">‹ הקודם</button>
       <span id="atpPageLbl" style="font-size:.8rem;color:var(--muted);">עמוד 1 / 1</span>
@@ -738,6 +744,7 @@ body.light .type-badge{background:rgba(109,40,217,.1);}
       <button class="atp-nav-btn" onclick="clrAtpDraw()" style="margin-right:auto;color:var(--red);border-color:rgba(239,68,68,.4);">נקה ציור</button>
       <button class="atp-nav-btn" onclick="document.getElementById('atpImgUpload').click()" style="color:#a78bfa;border-color:rgba(139,92,246,.4);">＋ תמונה</button>
       <button class="atp-nav-btn" onclick="document.getElementById('atpFile').click()" style="color:#f59e0b;border-color:rgba(245,158,11,.4);">📄 PDF</button>
+      <button class="atp-nav-btn" onclick="clearAtpDoc()" style="color:var(--red);border-color:rgba(239,68,68,.4);">🗑️ מחק</button>
     </div>
     <div class="atp-draw-bar">
       <button class="atp-tool active" id="tool_pen"   onclick="setAtpTool('pen')">✏️ עט</button>
@@ -1176,8 +1183,8 @@ function delPhoto(i){S.photos.splice(i,1);renderPhotos();dSave();}
 var ATP={doc:null,page:1,total:0,tool:'pen',color:'#ef4444',drawing:false,lx:0,ly:0,loaded:false,pageImages:[],drawStates:{}};
 function openAtp(){document.getElementById('atpModal').classList.add('active');renderCapList();}
 // PDF.js CDN fallback (כאשר הקבצים המקומיים לא קיימים)
-var PDFJS_CDN='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
-var PDFJS_WORKER_CDN='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+var PDFJS_CDN='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js';
+var PDFJS_WORKER_CDN='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
 
 // Unified ATP file loader — handles PDF and images
 function loadAtpFile(inp, mode){
@@ -1252,28 +1259,15 @@ function _initAtpFromImages(imgArray){
 function loadAtpPDF(inp){ loadAtpFile(inp,'pdf'); } // backward compat
 
 function _loadPdfJs(cb){
-  // שלב 1: נסה ES module מקומי
-  import('./pdf.min.mjs').then(function(L){
-    L.GlobalWorkerOptions.workerSrc='./pdf.worker.min.mjs';
-    window._pdfjsLib=L;cb();
-  }).catch(function(){
-    // שלב 2: נסה UMD מקומי (pdf.min.js)
-    _loadScript('./pdf.min.js',function(){
-      if(window.pdfjsLib){
-        pdfjsLib.GlobalWorkerOptions.workerSrc='./pdf.worker.min.js';
-        window._pdfjsLib=pdfjsLib;cb();
-      } else {
-        // שלב 3: CDN
-        _loadScript(PDFJS_CDN,function(){
-          if(window.pdfjsLib){
-            pdfjsLib.GlobalWorkerOptions.workerSrc=PDFJS_WORKER_CDN;
-            window._pdfjsLib=pdfjsLib;cb();
-          } else {
-            toast('❌ PDF.js לא זמין — הוסף pdf.min.js לתיקייה או התחבר לאינטרנט');
-          }
-        });
-      }
-    });
+  // CDN ישיר עם גרסה 2.16.105 — תואמת לכל סוגי הטלפונים והדפדפנים
+  // (גרסאות 3.x משתמשות ב-getOrInsertComputed שלא קיים בדפדפנים ישנים)
+  _loadScript(PDFJS_CDN,function(){
+    if(window.pdfjsLib){
+      pdfjsLib.GlobalWorkerOptions.workerSrc=PDFJS_WORKER_CDN;
+      window._pdfjsLib=pdfjsLib;cb();
+    } else {
+      toast('❌ PDF.js לא נטען — בדוק חיבור לאינטרנט');
+    }
   });
 }
 
@@ -1551,6 +1545,21 @@ function captureAtpPage(){
   toast('עמוד '+ATP.page+' נשמר ✓');
   closeMod('atpModal');
 }
+function saveAllAtpPages(){
+  if(!ATP.pageImages||!ATP.pageImages.length){toast('⚠️ אין דפים טעונים');return;}
+  var count=0;
+  ATP.pageImages.forEach(function(dataUrl,idx){
+    if(!dataUrl)return;
+    var pageNum=idx+1;
+    var existing=S.atpPages.findIndex(function(p){return p.page===pageNum;});
+    if(existing>=0) S.atpPages[existing]={dataUrl:dataUrl,page:pageNum,fromPdf:true};
+    else S.atpPages.push({dataUrl:dataUrl,page:pageNum,fromPdf:true});
+    count++;
+  });
+  renderCapList();updateAtpRow();dSave();
+  if(count>0) toast('✅ '+count+' עמודים נשמרו');
+  else toast('⚠️ לא נמצאו עמודים שהומרו');
+}
 function renderCapList(){
   var el=document.getElementById('modalCapRow');if(!el)return;
   el.innerHTML='';
@@ -1593,6 +1602,19 @@ function updateAtpRow(){
   }
 }
 function delAtp(i){S.atpPages.splice(i,1);renderCapList();updateAtpRow();dSave();}
+
+function clearAtpDoc(){
+  // מחק את כל מסמך ה-ATP (PDF + תמונות שנשמרו)
+  ATP.doc=null;ATP.page=1;ATP.total=0;ATP.pageImages=[];ATP.drawStates={};
+  window._atpBuf=null;window._atpPdfForZip=null;window._pdfjsLib=null;
+  S.atpPages=S.atpPages.filter(function(p){return p.fromPdf!==true;});
+  // חזור למסך העלאה
+  document.getElementById('atpViewer').style.display='none';
+  document.getElementById('atpUpload').style.display='block';
+  var ob=document.getElementById('atpOpenBtn');if(ob)ob.style.display='none';
+  updateAtpRow();dSave();
+  toast('🗑️ המסמך נמחק');
+}
 
 // ═══════ SHARE REPORT ═══════
 // ═══════ SHARE ATP ═══════
