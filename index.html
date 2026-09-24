@@ -1300,28 +1300,32 @@ window._atpInit=function(){
         var ob=document.getElementById('atpOpenBtn');if(ob)ob.style.display='block';
         showAtpPage(1);
         statusEl.textContent='✓ ATP נטען — '+doc.numPages+' עמודים';
+        // שמור את כל דפי ה-PDF אוטומטית ל-S.atpPages (ברור עמודים קיימים מ-PDF זה תחילה)
+        S.atpPages = S.atpPages.filter(function(p){ return p.fromPdf !== true; });
+        ATP.pageImages.forEach(function(dataUrl,idx){
+          if(dataUrl) S.atpPages.push({dataUrl:dataUrl, page:idx+1, fromPdf:true});
+        });
+        updateAtpRow(); dSave();
         return;
       }
       doc.getPage(n).then(function(page){
         var vp=page.getViewport({scale:1});
         // מגביל ל-1024px רוחב — מונע קריסת canvas על טאבלט
-        var maxW=1024;
-        var sc=Math.min(maxW/vp.width, 2);
+        var sc=Math.min(1024/vp.width, 2);
         var viewport=page.getViewport({scale:sc});
         var tc=document.createElement('canvas');
         tc.width=Math.round(viewport.width);
         tc.height=Math.round(viewport.height);
-        var ctx=tc.getContext('2d',{alpha:false,willReadFrequently:false});
+        var ctx=tc.getContext('2d'); // ללא אופציות — חיוני ל-PDF.js
         if(!ctx){
-          // canvas נכשל (מגבלת זיכרון טאבלט) — נסה scale קטן יותר
-          var sc2=Math.min(800/vp.width,1.5);
-          var vp2=page.getViewport({scale:sc2});
-          tc.width=Math.round(vp2.width);tc.height=Math.round(vp2.height);
+          // canvas נכשל (מגבלת זיכרון) — נסה scale קטן
+          sc=Math.min(768/vp.width,1.2);
+          viewport=page.getViewport({scale:sc});
+          tc.width=Math.round(viewport.width);tc.height=Math.round(viewport.height);
           ctx=tc.getContext('2d');
           if(!ctx){ATP.pageImages.push(null);renderPageToImage(n+1);return;}
-          viewport=vp2;
         }
-        ctx.fillStyle='#fff';ctx.fillRect(0,0,tc.width,tc.height);
+        ctx.fillStyle='#ffffff';ctx.fillRect(0,0,tc.width,tc.height);
         page.render({canvasContext:ctx,viewport:viewport}).promise.then(function(){
           ATP.pageImages.push(tc.toDataURL('image/jpeg',0.88));
           statusEl.textContent='ממיר... '+n+'/'+doc.numPages;
