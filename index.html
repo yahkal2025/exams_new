@@ -313,6 +313,9 @@ body.light .type-badge{background:rgba(109,40,217,.1);}
   </div>
   <div class="login-title">מערכת ניהול בחינות אחזקה ורכש</div>
   <div class="login-sub">יחידת הקישור והלוגיסטיקה — גף קישור ובחינה</div>
+  <div style="text-align:center;margin-top:6px;color:var(--muted);font-size:.7rem;line-height:1.7;">
+    פותח ע"י רס"ן מירי נחום &nbsp;|&nbsp; V1 &nbsp;|&nbsp; 24.09.2026
+  </div>
 
   <div class="sec-lbl">סוג בחינה</div>
   <div class="et-group">
@@ -1738,12 +1741,31 @@ function _buildReportHtml(){
 
   // attachment appendix
   var attHtml='';
-  var hasAtt=S.photos.length||S.atpPages.length;
+  var atpImgPages=S.atpPages.filter(function(p){return!!p.dataUrl;});
+  var hasPdfRaw=!!window._atpPdfForZip;
+  var hasAtt=S.photos.length||atpImgPages.length||hasPdfRaw;
   if(hasAtt){
     attHtml='<div class="section-title">נספח א\' — קבצים מצורפים</div>';
-    S.atpPages.forEach(function(p,i){
+    // עמודי PDF שרונדרו (lazy) — כל דף שהמשתמש פתח
+    if(hasPdfRaw && ATP.pageImages){
+      var anyRendered=false;
+      ATP.pageImages.forEach(function(dataUrl,idx){
+        if(!dataUrl)return;
+        anyRendered=true;
+        attHtml+='<div style="margin:10px 0"><div style="font-size:9pt;color:#555;margin-bottom:4px">PDF עמוד '+(idx+1)+'</div><img src="'+dataUrl+'" class="attachment-img"></div>';
+      });
+      if(!anyRendered){
+        // PDF נטען אך לא נצפה — הצג הודעה (הקובץ עצמו ב-ZIP)
+        attHtml+='<div style="margin:14px 0;padding:12px 16px;background:#f3f4f6;border-radius:7px;font-size:9pt;color:#374151;border:1px solid #d1d5db">'+
+          '📄 <strong>מסמך PDF מצורף</strong> — '+ATP.total+' עמודים<br>'+
+          '<span style="color:#6b7280;font-size:8.5pt">הקובץ המלא נמצא ב-ZIP בתיקייה: atp/atp_document.pdf</span></div>';
+      }
+    }
+    // עמודי ATP שנשמרו ידנית (תמונות שצולמו)
+    atpImgPages.forEach(function(p,i){
       attHtml+='<div style="margin:10px 0"><div style="font-size:9pt;color:#555;margin-bottom:4px">ATP עמוד '+(i+1)+'</div><img src="'+p.dataUrl+'" class="attachment-img"></div>';
     });
+    // תמונות
     S.photos.forEach(function(p,i){
       attHtml+='<div style="margin:10px 0"><div style="font-size:9pt;color:#555;margin-bottom:4px">תמונה '+(i+1)+'</div><img src="'+p.dataUrl+'" class="attachment-img"></div>';
     });
