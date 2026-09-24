@@ -1331,8 +1331,14 @@ window._atpInit=function(){
           ATP.pageImages.push(tc.toDataURL('image/jpeg',0.88));
           statusEl.textContent='ממיר... '+n+'/'+doc.numPages;
           renderPageToImage(n+1);
-        }).catch(function(e){ATP.pageImages.push(null);renderPageToImage(n+1);});
-      }).catch(function(e){ATP.pageImages.push(null);renderPageToImage(n+1);});
+        }).catch(function(e){
+          if(n===1) toast('⚠️ שגיאת רנדור PDF: '+(e&&e.message||String(e)));
+          ATP.pageImages.push(null);renderPageToImage(n+1);
+        });
+      }).catch(function(e){
+        if(n===1) toast('⚠️ שגיאת getPage: '+(e&&e.message||String(e)));
+        ATP.pageImages.push(null);renderPageToImage(n+1);
+      });
     }
     renderPageToImage(1);
   }).catch(function(e){toast('שגיאה: '+e.message);});
