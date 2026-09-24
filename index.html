@@ -313,10 +313,6 @@ body.light .type-badge{background:rgba(109,40,217,.1);}
   </div>
   <div class="login-title">מערכת ניהול בחינות אחזקה ורכש</div>
   <div class="login-sub">יחידת הקישור והלוגיסטיקה — גף קישור ובחינה</div>
-  <div style="text-align:center;margin-top:6px;color:var(--muted);font-size:.7rem;line-height:1.7;">
-    פותח ע"י רס"ן מירי נחום &nbsp;|&nbsp; V1 &nbsp;|&nbsp; 24.09.2026
-  </div>
-
   <div class="sec-lbl">סוג בחינה</div>
   <div class="et-group">
     <button class="et-btn" id="btnRakash" onclick="selType('רכש')">
@@ -379,7 +375,7 @@ body.light .type-badge{background:rgba(109,40,217,.1);}
     <button class="step-btn" id="nb7" onclick="goStep(7)"><span class="si">✍️</span>אישורים</button>
   </div>
   <div class="autosave" id="autoLbl">שמירה אוטומטית</div>
-  <div class="copyright-bar">פותח ע"י רס"ן מירי נחום &nbsp;|&nbsp; © כל הזכויות שמורות</div>
+  <div class="copyright-bar">פותח ע"י רס"ן מירי נחום &nbsp;|&nbsp; V1 &nbsp;|&nbsp; 24.09.2026 &nbsp;|&nbsp; © כל הזכויות שמורות</div>
 
   <div class="main-wrap"><div class="main-content">
 
@@ -1324,31 +1320,58 @@ function showAtpPage(n){
   var existingImg=ATP.pageImages&&ATP.pageImages[n-1];
   if(existingImg){
     _displayAtpPage(n,existingImg);
-  } else if(ATP.doc){
-    // Lazy render: רנדר רק את הדף הנוכחי
-    var statusEl=document.getElementById('atpStatus');
-    statusEl.textContent='ממיר עמוד '+n+'/'+ATP.total+'...';
-    ATP.doc.getPage(n).then(function(page){
-      var vp=page.getViewport({scale:1});
-      var sc=Math.min(900/vp.width,1.8);
-      var viewport=page.getViewport({scale:sc});
-      var tc=document.createElement('canvas');
-      tc.width=Math.round(viewport.width);tc.height=Math.round(viewport.height);
-      var ctx=tc.getContext('2d');
-      if(!ctx){statusEl.textContent='שגיאה בהצגת עמוד — נסה שוב';return;}
-      ctx.fillStyle='#ffffff';ctx.fillRect(0,0,tc.width,tc.height);
-      page.render({canvasContext:ctx,viewport:viewport}).promise.then(function(){
-        var dataUrl=tc.toDataURL('image/jpeg',0.88);
+    return;
+  }
+
+  if(!ATP.doc) return;
+
+  // Lazy render: רנדר ישירות ל-canvas הנראה (חיוני על אנדרואיד — off-screen canvas מייצר שחור)
+  var pc=document.getElementById('atpPdfC');
+  var dc=document.getElementById('atpDrawC');
+  var statusEl=document.getElementById('atpStatus');
+  statusEl.textContent='ממיר עמוד '+n+'/'+ATP.total+'...';
+
+  ATP.doc.getPage(n).then(function(page){
+    var vp=page.getViewport({scale:1});
+    var sc=Math.min(900/vp.width,1.8);
+    var viewport=page.getViewport({scale:sc});
+
+    pc.width=Math.round(viewport.width);
+    pc.height=Math.round(viewport.height);
+    pc.style.width='100%';pc.style.height='auto';
+
+    var ctx=pc.getContext('2d');
+    if(!ctx){statusEl.textContent='שגיאה — נסה שוב';return;}
+
+    // הגדר canvas הציור לפני הרנדור (PDF.js צריך את שניהם מוגדרים)
+    dc.width=pc.width;dc.height=pc.height;
+    dc.style.width='100%';dc.style.height='auto';dc.style.opacity='1';
+    document.getElementById('atpPageLbl').textContent='עמוד '+n+' / '+ATP.total;
+
+    page.render({canvasContext:ctx,viewport:viewport}).promise.then(function(){
+      // שמור את הדף כתמונה לשימוש חוזר ולדוח
+      try{
+        var dataUrl=pc.toDataURL('image/jpeg',0.88);
         if(!ATP.pageImages) ATP.pageImages=[];
         ATP.pageImages[n-1]=dataUrl;
-        statusEl.textContent='✓ PDF נטען — '+ATP.total+' עמודים (מוכן לייצוא ✓)';
-        _displayAtpPage(n,dataUrl);
-      }).catch(function(e){statusEl.textContent='שגיאת תצוגה: '+e.message;});
-    }).catch(function(e){statusEl.textContent='שגיאה: '+e.message;});
-  }
+      }catch(e){/* canvas tainted — OK, יוצג אך לא יישמר */}
+
+      // שחזר ציורים
+      var savedDraw=ATP.drawStates[n];
+      if(savedDraw){
+        var di=new Image();
+        di.onload=function(){dc.getContext('2d').drawImage(di,0,0);setupAtpDraw(dc);};
+        di.src=savedDraw;
+      }else{
+        dc.getContext('2d').clearRect(0,0,dc.width,dc.height);
+        setupAtpDraw(dc);
+      }
+      statusEl.textContent='✓ PDF נטען — '+ATP.total+' עמודים (מוכן לייצוא ✓)';
+    }).catch(function(e){statusEl.textContent='שגיאת תצוגה: '+e.message;});
+  }).catch(function(e){statusEl.textContent='שגיאה: '+e.message;});
 }
 
-// פונקציית עזר — מציג תמונה ב-canvas של ה-ATP viewer
+// פונקציית עזר — מציג תמונה שמורה ב-canvas של ה-viewer
 function _displayAtpPage(n,imgSrc){
   var pc=document.getElementById('atpPdfC');
   var img=new Image();
